@@ -1,18 +1,30 @@
 package server
 
-import "github.com/labstack/echo/v4"
+import (
+	"github.com/Nexadis/gophmart/internal/db"
+	"github.com/Nexadis/gophmart/internal/logger"
+	"github.com/labstack/echo/v4"
+)
 
 type Server struct {
 	e      *echo.Echo
 	config *Config
+	db     db.Database
 }
 
-func New(config *Config) Server {
+func New(config *Config) (*Server, error) {
 	e := echo.New()
-	return Server{
+	db := db.New()
+	err := db.Open(config.DbURI)
+	if err != nil {
+		logger.Logger.Infoln(`can't connect to DB`)
+		return nil, err
+	}
+	return &Server{
 		e:      e,
 		config: config,
-	}
+		db:     db,
+	}, nil
 }
 
 func (s *Server) Run() error {
