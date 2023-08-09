@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/Nexadis/gophmart/internal/db"
+	"github.com/Nexadis/gophmart/internal/db/pg"
 	"github.com/Nexadis/gophmart/internal/logger"
 	"github.com/labstack/echo/v4"
 )
@@ -14,7 +15,7 @@ type Server struct {
 
 func New(config *Config) (*Server, error) {
 	e := echo.New()
-	db := db.New()
+	db := pg.New()
 	err := db.Open(config.DbURI)
 	if err != nil {
 		logger.Logger.Infoln(`can't connect to DB`)
