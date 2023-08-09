@@ -13,8 +13,8 @@ import (
 )
 
 const schema = `CREATE TABLE Users(
-"login" VARCHAR(250) PRIMARY KEY,
-"hashpass" VARCHAR(64) NOT NULL);
+"login" VARCHAR(256) PRIMARY KEY,
+"hashpass" VARCHAR(256) NOT NULL);
 `
 
 var (
@@ -62,7 +62,10 @@ func (db *DB) Close() error {
 }
 
 func (db *DB) AddUser(ctx context.Context, user *user.User) error {
-	hash := user.HashPassword()
+	hash, err := user.HashPassword()
+	if err != nil {
+		return fmt.Errorf("%s: %w", ErrSomeWrong, err)
+	}
 	stmt, err := db.db.Prepare("INSERT INTO Users(\"login\",\"hashpass\") values($1,$2)")
 	if err != nil {
 		return err
@@ -79,6 +82,6 @@ func (db *DB) AddUser(ctx context.Context, user *user.User) error {
 		}
 		return fmt.Errorf("%s: %w", ErrSomeWrong, err)
 	}
-	logger.Logger.Infof("User:%s with pass %s added!", user.Login, hash)
+	logger.Logger.Infof("User:'%s' with hash '%s' added!", user.Login, hash)
 	return nil
 }

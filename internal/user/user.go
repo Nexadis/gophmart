@@ -1,16 +1,29 @@
 package user
 
 import (
-	"crypto/sha256"
 	"encoding/hex"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
-	Login    *string `json:"login"`
-	Password *string `json:"password"`
+	Login    string `json:"login"`
+	Password string `json:"password"`
 }
 
-func (u User) HashPassword() string {
-	sum := sha256.Sum256([]byte(*u.Password))
-	return hex.EncodeToString(sum[:])
+func (u User) HashPassword() (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hash), nil
+}
+
+func (u User) IsValidPassword(hash string) bool {
+	binHash, err := hex.DecodeString(hash)
+	if err != nil {
+		panic(err)
+	}
+	err = bcrypt.CompareHashAndPassword(binHash, []byte(u.Password))
+	return err == nil
 }
