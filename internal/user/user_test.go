@@ -37,7 +37,7 @@ func TestIsValidPassword(t *testing.T) {
 			hash, err := test.User.HashPassword()
 			t.Logf("Hash:%s, len:%d", hash, len(hash))
 			if assert.NoError(t, err) {
-				assert.Equal(t, test.User.IsValidPassword(hash), true)
+				assert.Equal(t, test.User.IsValidHash(hash), true)
 			}
 		})
 	}

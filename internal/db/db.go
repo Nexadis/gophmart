@@ -13,12 +13,14 @@ const Schema = `CREATE TABLE Users(
 `
 
 var (
-	ErrUserIsExist = errors.New(`user is exist`)
-	ErrSomeWrong   = errors.New(`some wrong`)
+	ErrUserIsExist  = errors.New(`user is exist`)
+	ErrUserNotFound = errors.New(`user not found`)
+	ErrSomeWrong    = errors.New(`some wrong`)
 )
 
 type Database interface {
 	Open(Addr string) error
 	AddUser(ctx context.Context, user *user.User) error
+	GetUser(ctx context.Context, login string) (*user.User, error)
 	Close() error
 }

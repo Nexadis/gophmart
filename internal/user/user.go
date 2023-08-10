@@ -9,17 +9,21 @@ import (
 type User struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`
+	HashPass string `json:"-"`
 }
 
-func (u User) HashPassword() (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
+func (u *User) HashPassword() (string, error) {
+	if u.HashPass == "" {
+		hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return "", err
+		}
+		u.HashPass = hex.EncodeToString(hash)
 	}
-	return hex.EncodeToString(hash), nil
+	return u.HashPass, nil
 }
 
-func (u User) IsValidPassword(hash string) bool {
+func (u User) IsValidHash(hash string) bool {
 	binHash, err := hex.DecodeString(hash)
 	if err != nil {
 		panic(err)

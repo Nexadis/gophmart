@@ -71,3 +71,17 @@ func (pg *PG) AddUser(ctx context.Context, user *user.User) error {
 	logger.Logger.Infof("User:'%s' with hash '%s' added!", user.Login, hash)
 	return nil
 }
+
+func (pg *PG) GetUser(ctx context.Context, login string) (*user.User, error) {
+	stmt, err := pg.db.Prepare("SELECT login, hashpass FROM Users WHERE login=$1")
+	if err != nil {
+		return nil, err
+	}
+	u := new(user.User)
+	row := stmt.QueryRowContext(ctx, login)
+	err = row.Scan(&u.Login, &u.HashPass)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
