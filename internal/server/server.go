@@ -35,10 +35,10 @@ func (s *Server) Run() error {
 
 func (s *Server) MountHandlers() {
 	s.e.POST(ApiUserRegister, s.UserRegister)
-	s.e.POST("/api/user/login", s.UserLogin)
-	s.e.POST("/api/user/orders", s.UserOrdersSave)
-	s.e.GET("/api/user/orders", s.UserOrdersGet)
-	s.e.GET("/api/user/balance", s.UserBalance)
-	s.e.POST("/api/user/balance/withdraw", s.UserBalanceWithdraw)
-	s.e.GET("/api/user/withdrawals", s.UserWithdrawals)
+	s.e.POST(ApiUserLogin, s.UserLogin)
+	s.e.POST(ApiUserOrders, s.UserOrdersSave)
+	s.e.GET(ApiUserOrders, s.UserOrdersGet)
+	s.e.GET(ApiUserBalance, s.UserBalance)
+	s.e.POST(ApiUserBalanceWithdraw, s.UserBalanceWithdraw)
+	s.e.GET(ApiUserWithdrawals, s.UserWithdrawals)
 }
