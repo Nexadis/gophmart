@@ -22,6 +22,15 @@ var jsonHeaders = []http.Header{
 	},
 }
 
+var defaultDB = testDB{
+	Users: map[string]*user.User{
+		"admin": {
+			Login:    "admin",
+			Password: "secretpassword",
+		},
+	},
+}
+
 type testDB struct {
 	Users map[string]*user.User
 }
@@ -103,14 +112,7 @@ var testsUserRegister = []testCase{
 			status:   http.StatusOK,
 			response: "",
 			err:      nil,
-			db: testDB{
-				Users: map[string]*user.User{
-					"admin": {
-						Login:    "admin",
-						Password: "secretpassword",
-					},
-				},
-			},
+			db:       defaultDB,
 		},
 	}, {
 		name: "Duplicate user",
@@ -121,14 +123,7 @@ var testsUserRegister = []testCase{
 			status:   http.StatusConflict,
 			response: db.ErrUserIsExist.Error(),
 			err:      db.ErrUserIsExist,
-			db: testDB{
-				Users: map[string]*user.User{
-					"admin": {
-						Login:    "admin",
-						Password: "secretpassword",
-					},
-				},
-			},
+			db:       defaultDB,
 		},
 	},
 }
@@ -166,6 +161,56 @@ func TestUserRegister(t *testing.T) {
 				assert.Equal(t, test.want.db.Users, db.Users)
 				body, _ := io.ReadAll(rec.Body)
 				assert.Equal(t, test.want.response, string(body))
+			}
+		})
+	}
+}
+
+func newUserLogin(body string) *request {
+	return &request{
+		method:  http.MethodPost,
+		URI:     ApiUserLogin,
+		body:    body,
+		headers: jsonHeaders,
+	}
+}
+
+var testsUserLogin = []testCase{
+	{
+		name: "Login Valid User",
+		r: *newUserLogin(
+			`{"login":"admin","password":"secretpassword"}`,
+		),
+		want: want{
+			status: http.StatusOK,
+			err:    nil,
+			db:     defaultDB,
+		},
+	}, {
+		name: "Login invalid user",
+		r: *newUserLogin(
+			`{"login":"admin","password":"invalid"}`,
+		),
+		want: want{
+			status: http.StatusUnauthorized,
+			err:    nil,
+			db:     defaultDB,
+		},
+	},
+}
+
+func TestUserLogin(t *testing.T) {
+	s := newTestServer()
+	for _, test := range testsUserLogin {
+		t.Run(test.name, func(t *testing.T) {
+			s.db = &test.want.db
+			req := httptest.NewRequest(test.r.method, test.r.URI, strings.NewReader(test.r.body))
+			setHeaders(req, test.r.headers)
+			rec := httptest.NewRecorder()
+			c := s.e.NewContext(req, rec)
+			if assert.NoError(t, s.UserLogin(c)) {
+				assert.Equal(t, test.want.status, rec.Code)
+				assert.Equal(t, test.want.db.Users, test.want.db.Users)
 			}
 		})
 	}
