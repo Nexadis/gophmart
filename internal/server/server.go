@@ -9,6 +9,7 @@ import (
 	"github.com/Nexadis/gophmart/internal/logger"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 type Server struct {
@@ -53,6 +54,8 @@ func prepareServer(s *Server) {
 }
 
 func (s *Server) MountHandlers() {
+	s.e.Use(middleware.Logger())
+	s.e.Use(middleware.Gzip())
 	s.e.POST(ApiUserRegister, s.UserRegister)
 	s.e.POST(ApiUserLogin, s.UserLogin)
 	r := s.e.Group(ApiRestricted)
