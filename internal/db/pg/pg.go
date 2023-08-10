@@ -81,7 +81,10 @@ func (pg *PG) GetUser(ctx context.Context, login string) (*user.User, error) {
 	row := stmt.QueryRowContext(ctx, login)
 	err = row.Scan(&u.Login, &u.HashPass)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, db.ErrUserNotFound
+		}
+		return nil, fmt.Errorf("%s: %w", db.ErrSomeWrong, err)
 	}
 	return u, nil
 }
