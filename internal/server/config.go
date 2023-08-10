@@ -8,7 +8,7 @@ import (
 
 type Config struct {
 	RunAddress           string `env:"RUN_ADDRESS"`
-	DbURI                string `env:"DATABASE_URI"`
+	DBURI                string `env:"DATABASE_URI"`
 	AccrualSystemAddress string `env:"ACCRUAL_SYSTEM_ADDRESS"`
 	JwtSecret            string `env:"JWT_SECRET"`
 }
@@ -21,7 +21,7 @@ func NewConfig() *Config {
 
 func setFlags(c *Config) {
 	flag.StringVar(&c.RunAddress, "a", ":8080", "Run Address for server")
-	flag.StringVar(&c.DbURI, "d", "", "Database Uri")
+	flag.StringVar(&c.DBURI, "d", "", "Database Uri")
 	flag.StringVar(&c.AccrualSystemAddress, "r", "", "Accrual System Address")
 }
 

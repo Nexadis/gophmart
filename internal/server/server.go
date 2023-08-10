@@ -25,7 +25,7 @@ var JwtSecret []byte
 func New(config *Config) (*Server, error) {
 	e := echo.New()
 	db := pg.New()
-	err := db.Open(config.DbURI)
+	err := db.Open(config.DBURI)
 	if err != nil {
 		logger.Logger.Infoln(`can't connect to DB`)
 		return nil, err
