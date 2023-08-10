@@ -37,9 +37,10 @@ func (s *Server) UserRegister(c echo.Context) error {
 		logger.Logger.Error(err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
-	return c.JSON(http.StatusOK, echo.Map{
-		"token": token,
-	})
+	cookie := auth.CookieToken(token)
+	c.SetCookie(cookie)
+
+	return c.NoContent(http.StatusOK)
 }
 
 func (s *Server) UserLogin(c echo.Context) error {
@@ -68,9 +69,9 @@ func (s *Server) UserLogin(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	logger.Logger.Infof("User '%s' authorized. Token:'%s'", savedUser.Login, token)
-	return c.JSON(http.StatusOK, echo.Map{
-		"token": token,
-	})
+	cookie := auth.CookieToken(token)
+	c.SetCookie(cookie)
+	return c.NoContent(http.StatusOK)
 }
 
 func (s *Server) UserOrdersSave(c echo.Context) error {

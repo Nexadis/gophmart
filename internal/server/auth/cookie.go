@@ -7,8 +7,8 @@ import (
 
 func CookieToken(value string) *http.Cookie {
 	return &http.Cookie{
-		Name:    "token",
-		Value:   value,
+		Name:    "Authorization",
+		Value:   "Bearer " + value,
 		Expires: time.Now().Add(TokenExp),
 	}
 }
