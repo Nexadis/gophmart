@@ -34,7 +34,7 @@ func (s *Server) Run() error {
 }
 
 func (s *Server) MountHandlers() {
-	s.e.POST("/api/user/register", s.UserRegister)
+	s.e.POST(ApiUserRegister, s.UserRegister)
 	s.e.POST("/api/user/login", s.UserLogin)
 	s.e.POST("/api/user/orders", s.UserOrdersSave)
 	s.e.GET("/api/user/orders", s.UserOrdersGet)
