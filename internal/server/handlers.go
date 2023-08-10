@@ -46,10 +46,11 @@ func (s *Server) UserLogin(c echo.Context) error {
 		logger.Logger.Error(err)
 		switch {
 		case errors.Is(err, db.ErrUserNotFound):
-			return c.NoContent(http.StatusUnauthorized)
+			c.NoContent(http.StatusUnauthorized)
 		default:
-			return c.NoContent(http.StatusInternalServerError)
+			c.NoContent(http.StatusInternalServerError)
 		}
+		return err
 	}
 	if !u.IsValidHash(savedUser.HashPass) {
 		return c.NoContent(http.StatusUnauthorized)

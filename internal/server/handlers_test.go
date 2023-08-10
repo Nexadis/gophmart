@@ -187,13 +187,23 @@ var testsUserLogin = []testCase{
 			db:     defaultDB,
 		},
 	}, {
-		name: "Login invalid user",
+		name: "Login invalid password",
 		r: *newUserLogin(
 			`{"login":"admin","password":"invalid"}`,
 		),
 		want: want{
 			status: http.StatusUnauthorized,
 			err:    nil,
+			db:     defaultDB,
+		},
+	}, {
+		name: "Login invalid user",
+		r: *newUserLogin(
+			`{"login":"user","password":"invalid"}`,
+		),
+		want: want{
+			status: http.StatusUnauthorized,
+			err:    db.ErrUserNotFound,
 			db:     defaultDB,
 		},
 	},
@@ -208,7 +218,12 @@ func TestUserLogin(t *testing.T) {
 			setHeaders(req, test.r.headers)
 			rec := httptest.NewRecorder()
 			c := s.e.NewContext(req, rec)
-			if assert.NoError(t, s.UserLogin(c)) {
+			err := s.UserLogin(c)
+			if test.want.err != nil {
+				assert.Error(t, err)
+				return
+			}
+			if assert.NoError(t, err) {
 				assert.Equal(t, test.want.status, rec.Code)
 				assert.Equal(t, test.want.db.Users, test.want.db.Users)
 			}
