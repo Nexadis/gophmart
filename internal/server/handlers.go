@@ -32,7 +32,14 @@ func (s *Server) UserRegister(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, u)
+	token, err := auth.NewToken(u.Login, JwtSecret)
+	if err != nil {
+		logger.Logger.Error(err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	return c.JSON(http.StatusOK, echo.Map{
+		"token": token,
+	})
 }
 
 func (s *Server) UserLogin(c echo.Context) error {
