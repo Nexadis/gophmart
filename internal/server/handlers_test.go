@@ -50,6 +50,20 @@ func (tdb *testDB) AddUser(ctx context.Context, user *user.User) error {
 	return nil
 }
 
+func (tdb *testDB) GetUser(ctx context.Context, login string) (*user.User, error) {
+	var u *user.User
+	var ok bool
+	var err error
+	if u, ok = tdb.Users[login]; !ok {
+		return nil, db.ErrUserNotFound
+	}
+	u.Password, err = u.HashPassword()
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
 type want struct {
 	status   int
 	response string

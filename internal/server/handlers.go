@@ -6,6 +6,7 @@ import (
 
 	"github.com/Nexadis/gophmart/internal/db"
 	"github.com/Nexadis/gophmart/internal/logger"
+	"github.com/Nexadis/gophmart/internal/server/auth"
 	"github.com/Nexadis/gophmart/internal/user"
 	"github.com/labstack/echo/v4"
 )
@@ -13,7 +14,6 @@ import (
 const InvalidReq = "invalid request"
 
 func (s *Server) UserRegister(c echo.Context) error {
-	logger.Logger.Infoln("Got Register request")
 	u := new(user.User)
 	if err := c.Bind(u); err != nil {
 		logger.Logger.Errorln(err)
@@ -36,7 +36,33 @@ func (s *Server) UserRegister(c echo.Context) error {
 }
 
 func (s *Server) UserLogin(c echo.Context) error {
-	return nil
+	u := new(user.User)
+	if err := c.Bind(u); err != nil {
+		logger.Logger.Errorln(err)
+		return c.String(http.StatusBadRequest, InvalidReq)
+	}
+	savedUser, err := s.db.GetUser(c.Request().Context(), u.Login)
+	if err != nil {
+		logger.Logger.Error(err)
+		switch {
+		case errors.Is(err, db.ErrUserNotFound):
+			return c.NoContent(http.StatusUnauthorized)
+		default:
+			return c.NoContent(http.StatusInternalServerError)
+		}
+	}
+	if !u.IsValidHash(savedUser.HashPass) {
+		return c.NoContent(http.StatusUnauthorized)
+	}
+	token, err := auth.NewToken(u)
+	if err != nil {
+		logger.Logger.Error(err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	logger.Logger.Infof("User '%s' authorized. Token:'%s'", savedUser.Login, token)
+	cookie := auth.CookieToken(token)
+	c.SetCookie(cookie)
+	return c.NoContent(http.StatusOK)
 }
 
 func (s *Server) UserOrdersSave(c echo.Context) error {
