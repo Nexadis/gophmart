@@ -4,7 +4,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Nexadis/gophmart/internal/user"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -18,19 +17,19 @@ type TypeMethod = jwt.SigningMethodHMAC
 
 type Claims struct {
 	jwt.RegisteredClaims
-	Login string
+	Login string `json:"login"`
 }
 
-func NewToken(user *user.User) (string, error) {
+func NewToken(login string, secret []byte) (string, error) {
 	token := jwt.NewWithClaims(SignMethod, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenExp)),
 		},
-		Login: user.Login,
+		Login: login,
 	})
-	tokenString, err := token.SignedString([]byte(user.Password))
+	tokenString, err := token.SignedString(secret)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	return tokenString, nil
 }

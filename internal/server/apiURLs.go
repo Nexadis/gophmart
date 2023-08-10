@@ -3,8 +3,9 @@ package server
 const (
 	ApiUserRegister        = "/api/user/register"
 	ApiUserLogin           = "/api/user/login"
-	ApiUserOrders          = "/api/user/orders"
-	ApiUserBalance         = "/api/user/balance"
-	ApiUserBalanceWithdraw = "/api/user/balance/withdraw"
-	ApiUserWithdrawals     = "/api/user/withdrawals"
+	ApiRestricted          = "/api/user"
+	ApiUserOrders          = "/orders"
+	ApiUserBalance         = "/balance"
+	ApiUserBalanceWithdraw = "/balance/withdraw"
+	ApiUserWithdrawals     = "/withdrawals"
 )

@@ -1,9 +1,13 @@
 package server
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+
 	"github.com/Nexadis/gophmart/internal/db"
 	"github.com/Nexadis/gophmart/internal/db/pg"
 	"github.com/Nexadis/gophmart/internal/logger"
+	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 )
 
@@ -12,6 +16,10 @@ type Server struct {
 	config *Config
 	db     db.Database
 }
+
+const secretLen = 32
+
+var JwtSecret []byte
 
 func New(config *Config) (*Server, error) {
 	e := echo.New()
@@ -29,16 +37,31 @@ func New(config *Config) (*Server, error) {
 }
 
 func (s *Server) Run() error {
-	s.MountHandlers()
+	prepareServer(s)
 	return s.e.Start(s.config.RunAddress)
+}
+
+func prepareServer(s *Server) {
+	JwtSecret = []byte(s.config.JwtSecret)
+	if s.config.JwtSecret == "" {
+		secret := make([]byte, secretLen)
+		rand.Read(secret)
+		JwtSecret = secret
+		logger.Logger.Infof("Set Secret '%s'", hex.EncodeToString(JwtSecret))
+	}
+	s.MountHandlers()
 }
 
 func (s *Server) MountHandlers() {
 	s.e.POST(ApiUserRegister, s.UserRegister)
 	s.e.POST(ApiUserLogin, s.UserLogin)
-	s.e.POST(ApiUserOrders, s.UserOrdersSave)
-	s.e.GET(ApiUserOrders, s.UserOrdersGet)
-	s.e.GET(ApiUserBalance, s.UserBalance)
-	s.e.POST(ApiUserBalanceWithdraw, s.UserBalanceWithdraw)
-	s.e.GET(ApiUserWithdrawals, s.UserWithdrawals)
+	r := s.e.Group(ApiRestricted)
+	{
+		r.Use(echojwt.JWT(JwtSecret))
+		r.POST(ApiUserOrders, s.UserOrdersSave)
+		r.GET(ApiUserOrders, s.UserOrdersGet)
+		r.GET(ApiUserBalance, s.UserBalance)
+		r.POST(ApiUserBalanceWithdraw, s.UserBalanceWithdraw)
+		r.GET(ApiUserWithdrawals, s.UserWithdrawals)
+	}
 }

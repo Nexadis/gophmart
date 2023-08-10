@@ -54,15 +54,15 @@ func (s *Server) UserLogin(c echo.Context) error {
 	if !u.IsValidHash(savedUser.HashPass) {
 		return c.NoContent(http.StatusUnauthorized)
 	}
-	token, err := auth.NewToken(u)
+	token, err := auth.NewToken(u.Login, JwtSecret)
 	if err != nil {
 		logger.Logger.Error(err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	logger.Logger.Infof("User '%s' authorized. Token:'%s'", savedUser.Login, token)
-	cookie := auth.CookieToken(token)
-	c.SetCookie(cookie)
-	return c.NoContent(http.StatusOK)
+	return c.JSON(http.StatusOK, echo.Map{
+		"token": token,
+	})
 }
 
 func (s *Server) UserOrdersSave(c echo.Context) error {

@@ -17,6 +17,8 @@ type testCase struct {
 	want want
 }
 
+var testSecret = []byte("secret")
+
 var tests = []testCase{
 	{
 		name: "Simple login with password",
@@ -33,9 +35,9 @@ var tests = []testCase{
 func TestToken(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			tokenString, err := NewToken(test.user)
+			tokenString, err := NewToken(test.user.Login, testSecret)
 			assert.NoError(t, err)
-			isValid := IsValidToken(tokenString, []byte(test.user.Password))
+			isValid := IsValidToken(tokenString, testSecret)
 			assert.Equal(t, test.want.isValid, isValid)
 		})
 	}
