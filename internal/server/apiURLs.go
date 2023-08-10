@@ -1,11 +1,11 @@
 package server
 
 const (
-	ApiUserRegister        = "/api/user/register"
-	ApiUserLogin           = "/api/user/login"
-	ApiRestricted          = "/api/user"
-	ApiUserOrders          = "/orders"
-	ApiUserBalance         = "/balance"
-	ApiUserBalanceWithdraw = "/balance/withdraw"
-	ApiUserWithdrawals     = "/withdrawals"
+	APIUserRegister        = "/api/user/register"
+	APIUserLogin           = "/api/user/login"
+	APIRestricted          = "/api/user"
+	APIUserOrders          = "/orders"
+	APIUserBalance         = "/balance"
+	APIUserBalanceWithdraw = "/balance/withdraw"
+	APIUserWithdrawals     = "/withdrawals"
 )

@@ -56,15 +56,15 @@ func prepareServer(s *Server) {
 func (s *Server) MountHandlers() {
 	s.e.Use(middleware.Logger())
 	s.e.Use(middleware.Gzip())
-	s.e.POST(ApiUserRegister, s.UserRegister)
-	s.e.POST(ApiUserLogin, s.UserLogin)
-	r := s.e.Group(ApiRestricted)
+	s.e.POST(APIUserRegister, s.UserRegister)
+	s.e.POST(APIUserLogin, s.UserLogin)
+	r := s.e.Group(APIRestricted)
 	{
 		r.Use(echojwt.JWT(JwtSecret))
-		r.POST(ApiUserOrders, s.UserOrdersSave)
-		r.GET(ApiUserOrders, s.UserOrdersGet)
-		r.GET(ApiUserBalance, s.UserBalance)
-		r.POST(ApiUserBalanceWithdraw, s.UserBalanceWithdraw)
-		r.GET(ApiUserWithdrawals, s.UserWithdrawals)
+		r.POST(APIUserOrders, s.UserOrdersSave)
+		r.GET(APIUserOrders, s.UserOrdersGet)
+		r.GET(APIUserBalance, s.UserBalance)
+		r.POST(APIUserBalanceWithdraw, s.UserBalanceWithdraw)
+		r.GET(APIUserWithdrawals, s.UserWithdrawals)
 	}
 }

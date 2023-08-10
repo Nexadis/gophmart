@@ -96,7 +96,7 @@ type testCase struct {
 func newUserRegister(body string) *request {
 	return &request{
 		method:  http.MethodPost,
-		URI:     ApiUserRegister,
+		URI:     APIUserRegister,
 		body:    body,
 		headers: jsonHeaders,
 	}
@@ -169,7 +169,7 @@ func TestUserRegister(t *testing.T) {
 func newUserLogin(body string) *request {
 	return &request{
 		method:  http.MethodPost,
-		URI:     ApiUserLogin,
+		URI:     APIUserLogin,
 		body:    body,
 		headers: jsonHeaders,
 	}
