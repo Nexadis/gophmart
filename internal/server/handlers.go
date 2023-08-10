@@ -32,7 +32,7 @@ func (s *Server) UserRegister(c echo.Context) error {
 		}
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.JSON(http.StatusOK, u)
 }
 
 func (s *Server) UserLogin(c echo.Context) error {
