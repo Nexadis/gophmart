@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/Nexadis/gophmart/internal/db"
+	"github.com/Nexadis/gophmart/internal/order"
 	"github.com/Nexadis/gophmart/internal/user"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -32,13 +33,16 @@ var defaultDB = testDB{
 }
 
 type testDB struct {
-	Users map[string]*user.User
+	Users  map[string]*user.User
+	Orders map[string]*order.Order
 }
 
 func newTestDB() *testDB {
 	users := make(map[string]*user.User, 10)
+	orders := make(map[string]*order.Order, 10)
 	db := testDB{
 		users,
+		orders,
 	}
 	return &db
 }
@@ -71,6 +75,22 @@ func (tdb *testDB) GetUser(ctx context.Context, login string) (*user.User, error
 		return nil, err
 	}
 	return u, nil
+}
+
+func (tdb *testDB) AddOrder(ctx context.Context, o *order.Order) error {
+	return nil
+}
+
+func (tdb *testDB) AddOrders(ctx context.Context, orders []*order.Order) error {
+	return nil
+}
+
+func (tdb *testDB) GetOrder(ctx context.Context, number string) (*order.Order, error) {
+	return nil, nil
+}
+
+func (tdb *testDB) GetOrders(ctx context.Context, number []string) ([]*order.Order, error) {
+	return nil, nil
 }
 
 type want struct {

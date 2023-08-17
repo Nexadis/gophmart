@@ -35,6 +35,17 @@ func NewToken(login string, secret []byte) (string, error) {
 }
 
 func IsValidToken(tokenString string, key []byte) bool {
+	token, err := GetToken(tokenString, key)
+	if err != nil {
+		return false
+	}
+	if !token.Valid {
+		return false
+	}
+	return true
+}
+
+func GetToken(tokenString string, key []byte) (*jwt.Token, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims,
 		func(t *jwt.Token) (interface{}, error) {
@@ -44,10 +55,14 @@ func IsValidToken(tokenString string, key []byte) bool {
 			return key, nil
 		})
 	if err != nil {
-		return false
+		return nil, err
 	}
-	if !token.Valid {
-		return false
+	return token, nil
+}
+
+func GetClaims(token *jwt.Token) *Claims {
+	if claims, ok := token.Claims.(*Claims); ok {
+		return claims
 	}
-	return true
+	return nil
 }
