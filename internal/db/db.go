@@ -24,9 +24,8 @@ type UserStore interface {
 
 type OrdersStore interface {
 	AddOrder(ctx context.Context, o *order.Order) error
-	AddOrders(ctx context.Context, orders []*order.Order) error
 	GetOrder(ctx context.Context, number string) (*order.Order, error)
-	GetOrders(ctx context.Context, number []string) ([]*order.Order, error)
+	GetOrders(ctx context.Context, owner string) ([]*order.Order, error)
 }
 
 type Database interface {

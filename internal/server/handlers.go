@@ -85,7 +85,7 @@ func (s *Server) UserOrdersSave(c echo.Context) error {
 	defer req.Body.Close()
 	logger.Logger.Info(body)
 	header := req.Header.Get(echo.HeaderAuthorization)
-	login, err := auth.GetLogin(header)
+	login, err := auth.GetLogin(header, JwtSecret)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
@@ -113,7 +113,21 @@ func (s *Server) UserOrdersSave(c echo.Context) error {
 }
 
 func (s *Server) UserOrdersGet(c echo.Context) error {
-	return nil
+	req := c.Request()
+	header := req.Header.Get(echo.HeaderAuthorization)
+	logger.Logger.Info(header)
+	login, err := auth.GetLogin(header, JwtSecret)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, err.Error())
+	}
+	orders, err := s.db.GetOrders(req.Context(), login)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	if len(orders) == 0 {
+		return c.NoContent(http.StatusNoContent)
+	}
+	return c.JSON(http.StatusOK, orders)
 }
 
 func (s *Server) UserBalance(c echo.Context) error {

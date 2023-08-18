@@ -20,7 +20,7 @@ const (
 var ErrInvalidNum = errors.New(`invalid order number`)
 
 type Order struct {
-	Owner    string
+	Owner    string     `json:"-"`
 	Number   string     `json:"number"` // написать альтернативный маршалер в string
 	Status   Status     `json:"status"`
 	Accrual  *int64     `json:"accrual,omitempty"`

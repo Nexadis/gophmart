@@ -136,12 +136,8 @@ func (pg *PG) AddOrder(ctx context.Context, o *order.Order) error {
 	return nil
 }
 
-func (pg *PG) AddOrders(ctx context.Context, orders []*order.Order) error {
-	return nil
-}
-
 func (pg *PG) GetOrder(ctx context.Context, number string) (*order.Order, error) {
-	stmt, err := pg.db.Prepare("SELECT number, owner, status, accrual, upload_at FROM Orders WHERE number=$1")
+	stmt, err := pg.db.Prepare("SELECT number, owner, status, accrual, upload_at FROM Orders WHERE number=$1 ORDER BY upload_at")
 	if err != nil {
 		return nil, err
 	}
@@ -160,6 +156,39 @@ func (pg *PG) GetOrder(ctx context.Context, number string) (*order.Order, error)
 	return o, nil
 }
 
-func (pg *PG) GetOrders(ctx context.Context, numbers []string) ([]*order.Order, error) {
-	return nil, nil
+func (pg *PG) GetOrders(ctx context.Context, owner string) ([]*order.Order, error) {
+	stmt, err := pg.db.Prepare("SELECT number, owner, status, accrual, upload_at FROM Orders WHERE owner=$1 ORDER BY upload_at DESC")
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.QueryContext(ctx, owner)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	columns, err := rows.Columns()
+	if err != nil {
+		logger.Logger.Error(err)
+		return nil, err
+	}
+
+	orders := make([]*order.Order, 0, len(columns))
+
+	for rows.Next() {
+		o := &order.Order{}
+		err = rows.Scan(&o.Number, &o.Owner, &o.Status, &o.Accrual, &o.UploadAt)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", db.ErrSomeWrong, err)
+		}
+		orders = append(orders, o)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return orders, nil
 }

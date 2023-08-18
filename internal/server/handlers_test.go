@@ -89,7 +89,7 @@ func (tdb *testDB) GetOrder(ctx context.Context, number string) (*order.Order, e
 	return nil, nil
 }
 
-func (tdb *testDB) GetOrders(ctx context.Context, number []string) ([]*order.Order, error) {
+func (tdb *testDB) GetOrders(ctx context.Context, owner string) ([]*order.Order, error) {
 	return nil, nil
 }
 

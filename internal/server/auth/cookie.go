@@ -16,12 +16,12 @@ func CookieToken(value string) *http.Cookie {
 	}
 }
 
-func GetLogin(cookie string) (string, error) {
+func GetLogin(cookie string, key []byte) (string, error) {
 	cookie = strings.TrimSpace(cookie)
 	tokenString := strings.Split(cookie, " ")[1]
-	token, err := GetToken(tokenString, []byte(""))
+	token, err := GetToken(tokenString, key)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	claims := GetClaims(token)
 	return claims.Login, nil
