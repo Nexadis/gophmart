@@ -37,21 +37,21 @@ var (
 type OrderNumber string
 
 type Order struct {
-	Owner    string      `json:"-"`
-	Number   OrderNumber `json:"number"`
-	Status   Status      `json:"status"`
-	Accrual  *int64      `json:"accrual,omitempty"`
-	UploadAt *time.Time  `json:"uploaded_at"`
+	Owner      string      `json:"-"`
+	Number     OrderNumber `json:"number"`
+	Status     Status      `json:"status"`
+	Accrual    *int64      `json:"accrual,omitempty"`
+	UploadedAt *time.Time  `json:"uploaded_at"`
 }
 
 func New(number, owner string) (*Order, error) {
 	upload := time.Now()
 	order := &Order{
-		Owner:    owner,
-		Number:   OrderNumber(number),
-		Status:   StatusNew,
-		Accrual:  nil,
-		UploadAt: &upload,
+		Owner:      owner,
+		Number:     OrderNumber(number),
+		Status:     StatusNew,
+		Accrual:    nil,
+		UploadedAt: &upload,
 	}
 	if order.IsValid() {
 		return order, nil
@@ -93,10 +93,10 @@ func (o OrderNumber) IsValid() bool {
 }
 
 type jsonOrder struct {
-	Number   OrderNumber `json:"number"`
-	Status   Status      `json:"status"`
-	Accrual  *float64    `json:"accrual,omitempty"`
-	UploadAt *time.Time  `json:"uploaded_at"`
+	Number     OrderNumber `json:"number"`
+	Status     Status      `json:"status"`
+	Accrual    *float64    `json:"accrual,omitempty"`
+	UploadedAt *time.Time  `json:"uploaded_at"`
 }
 
 func (o Order) MarshalJSON() ([]byte, error) {
@@ -106,10 +106,10 @@ func (o Order) MarshalJSON() ([]byte, error) {
 		accrual = &a
 	}
 	j := &jsonOrder{
-		Number:   o.Number,
-		Status:   o.Status,
-		Accrual:  accrual,
-		UploadAt: o.UploadAt,
+		Number:     o.Number,
+		Status:     o.Status,
+		Accrual:    accrual,
+		UploadedAt: o.UploadedAt,
 	}
 	return json.Marshal(j)
 }
@@ -129,7 +129,7 @@ func (o *Order) UnmarshalJSON(data []byte) error {
 		o.Accrual = &accrual
 	}
 	o.Number = j.Number
-	o.UploadAt = j.UploadAt
+	o.UploadedAt = j.UploadedAt
 	return nil
 }
 

@@ -26,7 +26,7 @@ const SchemaOrders = `CREATE TABLE Orders(
 	"owner" VARCHAR(256) NOT NULL,
 	"status" VARCHAR(256) NOT NULL,
 	"accrual" INT,
-	"upload_at" TIMESTAMP NOT NULL);`
+	"uploaded_at" TIMESTAMP NOT NULL);`
 
 const SchemaWithdrawals = `CREATE TABLE withdrawals(
 	"order" VARCHAR(256) PRIMARY KEY,
@@ -122,7 +122,7 @@ func (pg *PG) GetUser(ctx context.Context, login string) (*user.User, error) {
 }
 
 func (pg *PG) AddOrder(ctx context.Context, o *order.Order) error {
-	stmt, err := pg.db.Prepare("INSERT INTO Orders(number, owner, status, accrual, upload_at) values($1,$2,$3,$4,$5)")
+	stmt, err := pg.db.Prepare("INSERT INTO Orders(number, owner, status, accrual, uploaded_at) values($1,$2,$3,$4,$5)")
 	if err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ func (pg *PG) AddOrder(ctx context.Context, o *order.Order) error {
 		o.Owner,
 		o.Status,
 		o.Accrual,
-		o.UploadAt,
+		o.UploadedAt,
 	)
 	if err != nil {
 		logger.Logger.Error(err)
@@ -152,13 +152,13 @@ func (pg *PG) AddOrder(ctx context.Context, o *order.Order) error {
 }
 
 func (pg *PG) GetOrder(ctx context.Context, number order.OrderNumber) (*order.Order, error) {
-	stmt, err := pg.db.Prepare("SELECT number, owner, status, accrual, upload_at FROM Orders WHERE number=$1 ORDER BY upload_at")
+	stmt, err := pg.db.Prepare("SELECT number, owner, status, accrual, uploaded_at FROM Orders WHERE number=$1 ORDER BY uploaded_at")
 	if err != nil {
 		return nil, err
 	}
 	o := &order.Order{}
 	row := stmt.QueryRowContext(ctx, number)
-	err = row.Scan(&o.Number, &o.Owner, &o.Status, &o.Accrual, &o.UploadAt)
+	err = row.Scan(&o.Number, &o.Owner, &o.Status, &o.Accrual, &o.UploadedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, db.ErrOrderNotFound
@@ -172,7 +172,7 @@ func (pg *PG) GetOrder(ctx context.Context, number order.OrderNumber) (*order.Or
 }
 
 func (pg *PG) GetOrders(ctx context.Context, owner string) ([]*order.Order, error) {
-	stmt, err := pg.db.Prepare("SELECT number, owner, status, accrual, upload_at FROM Orders WHERE owner=$1 ORDER BY upload_at DESC")
+	stmt, err := pg.db.Prepare("SELECT number, owner, status, accrual, uploaded_at FROM Orders WHERE owner=$1 ORDER BY uploaded_at DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +193,7 @@ func (pg *PG) GetOrders(ctx context.Context, owner string) ([]*order.Order, erro
 
 	for rows.Next() {
 		o := &order.Order{}
-		err = rows.Scan(&o.Number, &o.Owner, &o.Status, &o.Accrual, &o.UploadAt)
+		err = rows.Scan(&o.Number, &o.Owner, &o.Status, &o.Accrual, &o.UploadedAt)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", db.ErrSomeWrong, err)
 		}
