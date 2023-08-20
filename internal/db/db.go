@@ -26,11 +26,13 @@ type OrdersStore interface {
 	AddOrder(ctx context.Context, o *order.Order) error
 	GetOrder(ctx context.Context, number order.OrderNumber) (*order.Order, error)
 	GetOrders(ctx context.Context, owner string) ([]*order.Order, error)
+	GetAccruals(ctx context.Context, owner string) (int64, error)
 }
 
 type WithdrawalsStore interface {
 	AddWithdrawal(ctx context.Context, wd *order.Withdraw) error
 	GetWithdrawals(ctx context.Context, owner string) ([]*order.Withdraw, error)
+	GetWithdrawn(ctx context.Context, owner string) (int64, error)
 }
 
 type Database interface {

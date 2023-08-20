@@ -101,6 +101,14 @@ func (tdb *testDB) GetWithdrawals(ctx context.Context, owner string) ([]*order.W
 	return nil, nil
 }
 
+func (tdb *testDB) GetWithdrawn(ctx context.Context, owner string) (int64, error) {
+	return 0, nil
+}
+
+func (tdb *testDB) GetAccruals(ctx context.Context, owner string) (int64, error) {
+	return 0, nil
+}
+
 type want struct {
 	status   int
 	response string

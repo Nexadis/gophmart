@@ -262,3 +262,31 @@ func (pg *PG) GetWithdrawals(ctx context.Context, owner string) ([]*order.Withdr
 
 	return withdrawals, nil
 }
+
+func (pg *PG) GetAccruals(ctx context.Context, owner string) (int64, error) {
+	stmt, err := pg.db.Prepare("SELECT SUM(accrual) FROM Orders WHERE owner=$1")
+	if err != nil {
+		return 0, err
+	}
+	var accrual int64
+	row := stmt.QueryRowContext(ctx, owner)
+	err = row.Scan(&accrual)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", db.ErrSomeWrong, err)
+	}
+	return accrual, nil
+}
+
+func (pg *PG) GetWithdrawn(ctx context.Context, owner string) (int64, error) {
+	stmt, err := pg.db.Prepare("SELECT SUM(sum) as sum FROM Withdrawals WHERE owner=$1")
+	if err != nil {
+		return 0, err
+	}
+	var withdrawn int64
+	row := stmt.QueryRowContext(ctx, owner)
+	err = row.Scan(&withdrawn)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", db.ErrSomeWrong, err)
+	}
+	return withdrawn, nil
+}

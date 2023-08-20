@@ -11,6 +11,7 @@ import (
 	"github.com/Nexadis/gophmart/internal/server/auth"
 	"github.com/Nexadis/gophmart/internal/user"
 	"github.com/labstack/echo/v4"
+	"golang.org/x/net/context"
 )
 
 const InvalidReq = "invalid request"
@@ -131,7 +132,17 @@ func (s *Server) UserOrdersGet(c echo.Context) error {
 }
 
 func (s *Server) UserBalance(c echo.Context) error {
-	return nil
+	req := c.Request()
+	header := req.Header.Get(echo.HeaderAuthorization)
+	login, err := auth.GetLogin(header, JwtSecret)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, err.Error())
+	}
+	balance, err := getBalance(req.Context(), s.db, login)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(http.StatusOK, balance)
 }
 
 func (s *Server) UserBalanceWithdraw(c echo.Context) error {
@@ -140,4 +151,20 @@ func (s *Server) UserBalanceWithdraw(c echo.Context) error {
 
 func (s *Server) UserWithdrawals(c echo.Context) error {
 	return nil
+}
+
+func getBalance(ctx context.Context, db db.Database, owner string) (*user.Balance, error) {
+	accruals, err := db.GetAccruals(ctx, owner)
+	if err != nil {
+		return nil, err
+	}
+	withdrawn, err := db.GetWithdrawn(ctx, owner)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user.Balance{
+		Current:   accruals - withdrawn,
+		Withdrawn: withdrawn,
+	}, nil
 }
