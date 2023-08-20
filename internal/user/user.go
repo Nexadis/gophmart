@@ -3,6 +3,7 @@ package user
 import (
 	"encoding/hex"
 
+	"github.com/Nexadis/gophmart/internal/order"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -10,6 +11,7 @@ type User struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`
 	HashPass string `json:"-"`
+	Balance  order.Balance
 }
 
 func (u *User) HashPassword() (string, error) {

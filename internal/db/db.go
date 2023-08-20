@@ -24,13 +24,19 @@ type UserStore interface {
 
 type OrdersStore interface {
 	AddOrder(ctx context.Context, o *order.Order) error
-	GetOrder(ctx context.Context, number string) (*order.Order, error)
+	GetOrder(ctx context.Context, number order.OrderNumber) (*order.Order, error)
 	GetOrders(ctx context.Context, owner string) ([]*order.Order, error)
+}
+
+type WithdrawalsStore interface {
+	AddWithdrawal(ctx context.Context, wd *order.Withdraw) error
+	GetWithdrawals(ctx context.Context, owner string) ([]*order.Withdraw, error)
 }
 
 type Database interface {
 	Open(Addr string) error
 	UserStore
 	OrdersStore
+	WithdrawalsStore
 	Close() error
 }

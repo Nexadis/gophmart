@@ -85,11 +85,19 @@ func (tdb *testDB) AddOrders(ctx context.Context, orders []*order.Order) error {
 	return nil
 }
 
-func (tdb *testDB) GetOrder(ctx context.Context, number string) (*order.Order, error) {
+func (tdb *testDB) GetOrder(ctx context.Context, number order.OrderNumber) (*order.Order, error) {
 	return nil, nil
 }
 
 func (tdb *testDB) GetOrders(ctx context.Context, owner string) ([]*order.Order, error) {
+	return nil, nil
+}
+
+func (tdb *testDB) AddWithdrawal(ctx context.Context, wd *order.Withdraw) error {
+	return nil
+}
+
+func (tdb *testDB) GetWithdrawals(ctx context.Context, owner string) ([]*order.Withdraw, error) {
 	return nil, nil
 }
 

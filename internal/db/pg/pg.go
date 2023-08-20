@@ -17,15 +17,26 @@ import (
 
 const SchemaUsers = `CREATE TABLE Users(
 "login" VARCHAR(256) PRIMARY KEY,
-"hashpass" VARCHAR(256) NOT NULL);
+"hashpass" VARCHAR(256) NOT NULL
+);
 `
 
 const SchemaOrders = `CREATE TABLE Orders(
 	"number" VARCHAR(256) PRIMARY KEY,
-	"owner" VARCHAR(256),
+	"owner" VARCHAR(256) NOT NULL,
 	"status" VARCHAR(256) NOT NULL,
 	"accrual" INT,
 	"upload_at" TIMESTAMP NOT NULL);`
+
+const SchemaWithdrawals = `CREATE TABLE withdrawals(
+	"order" VARCHAR(256) PRIMARY KEY,
+	"owner" VARCHAR(256) NOT NULL,
+	"sum" INT NOT NULL,
+	"processed_at" TIMESTAMP NOT NULL
+);
+`
+
+var _ db.Database = &PG{}
 
 type PG struct {
 	db *sql.DB
@@ -54,6 +65,10 @@ func (pg *PG) Open(Addr string) error {
 		logger.Logger.Errorln(err)
 	}
 	_, err = pgx.Exec(SchemaOrders)
+	if err != nil {
+		logger.Logger.Errorln(err)
+	}
+	_, err = pgx.Exec(SchemaWithdrawals)
 	if err != nil {
 		logger.Logger.Errorln(err)
 	}
@@ -136,7 +151,7 @@ func (pg *PG) AddOrder(ctx context.Context, o *order.Order) error {
 	return nil
 }
 
-func (pg *PG) GetOrder(ctx context.Context, number string) (*order.Order, error) {
+func (pg *PG) GetOrder(ctx context.Context, number order.OrderNumber) (*order.Order, error) {
 	stmt, err := pg.db.Prepare("SELECT number, owner, status, accrual, upload_at FROM Orders WHERE number=$1 ORDER BY upload_at")
 	if err != nil {
 		return nil, err
@@ -191,4 +206,59 @@ func (pg *PG) GetOrders(ctx context.Context, owner string) ([]*order.Order, erro
 	}
 
 	return orders, nil
+}
+
+func (pg *PG) AddWithdrawal(ctx context.Context, wd *order.Withdraw) error {
+	stmt, err := pg.db.Prepare("INSERT INTO Withdrawals(order, owner, sum, processed_at) values($1,$2,$3,$4)")
+	if err != nil {
+		return err
+	}
+	_, err = stmt.ExecContext(ctx,
+		wd.Order,
+		wd.Owner,
+		wd.Sum,
+		wd.ProcessedAt,
+	)
+	if err != nil {
+		logger.Logger.Error(err)
+		return fmt.Errorf("%s: %w", db.ErrSomeWrong, err)
+	}
+	return nil
+}
+
+func (pg *PG) GetWithdrawals(ctx context.Context, owner string) ([]*order.Withdraw, error) {
+	stmt, err := pg.db.Prepare("SELECT order, owner, sum, processed_at FROM Withdrawals WHERE owner=$1 ORDER BY processed_at DESC")
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.QueryContext(ctx, owner)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	columns, err := rows.Columns()
+	if err != nil {
+		logger.Logger.Error(err)
+		return nil, err
+	}
+
+	withdrawals := make([]*order.Withdraw, 0, len(columns))
+
+	for rows.Next() {
+		w := &order.Withdraw{}
+		err = rows.Scan(&w.Order, &w.Owner, &w.Sum, &w.ProcessedAt)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", db.ErrSomeWrong, err)
+		}
+		withdrawals = append(withdrawals, w)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return withdrawals, nil
 }

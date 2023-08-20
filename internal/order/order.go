@@ -1,6 +1,7 @@
 package order
 
 import (
+	"encoding/json"
 	"errors"
 	"math"
 	"strconv"
@@ -17,27 +18,37 @@ const (
 	SatusProcessed   Status = "PROCESSED"
 )
 
-var ErrInvalidNum = errors.New(`invalid order number`)
+var statuses []Status
 
-type Order struct {
-	Owner    string     `json:"-"`
-	Number   string     `json:"number"` // написать альтернативный маршалер в string
-	Status   Status     `json:"status"`
-	Accrual  *int64     `json:"accrual,omitempty"`
-	UploadAt *time.Time `json:"upload_at"`
+func init() {
+	statuses = []Status{
+		StatusNew,
+		SatusProcessed,
+		StatusInvalid,
+		StatusProcessing,
+	}
 }
 
-type OrderTime string
+var (
+	ErrInvalidNum    = errors.New(`invalid order number`)
+	ErrInvalidStatus = errors.New(`invalid status`)
+)
 
-func (ot OrderTime) Time() (time.Time, error) {
-	return time.Parse(time.RFC3339, string(ot))
+type OrderNumber string
+
+type Order struct {
+	Owner    string      `json:"-"`
+	Number   OrderNumber `json:"number"`
+	Status   Status      `json:"status"`
+	Accrual  *int64      `json:"accrual,omitempty"`
+	UploadAt *time.Time  `json:"uploaded_at"`
 }
 
 func New(number, owner string) (*Order, error) {
 	upload := time.Now()
 	order := &Order{
 		Owner:    owner,
-		Number:   number,
+		Number:   OrderNumber(number),
 		Status:   StatusNew,
 		Accrual:  nil,
 		UploadAt: &upload,
@@ -49,7 +60,11 @@ func New(number, owner string) (*Order, error) {
 }
 
 func (o Order) IsValid() bool {
-	digits := strings.Split(strings.ReplaceAll(o.Number, " ", ""), "")
+	return o.Number.IsValid()
+}
+
+func (o OrderNumber) IsValid() bool {
+	digits := strings.Split(strings.ReplaceAll(string(o), " ", ""), "")
 	lengthOfString := len(digits)
 
 	if lengthOfString < 2 {
@@ -75,4 +90,54 @@ func (o Order) IsValid() bool {
 	}
 
 	return math.Mod(float64(sum), 10) == 0
+}
+
+type jsonOrder struct {
+	Number   OrderNumber `json:"number"`
+	Status   Status      `json:"status"`
+	Accrual  *float64    `json:"accrual,omitempty"`
+	UploadAt *time.Time  `json:"uploaded_at"`
+}
+
+func (o Order) MarshalJSON() ([]byte, error) {
+	var accrual *float64
+	if o.Accrual != nil {
+		a := float64(*o.Accrual) / 100
+		accrual = &a
+	}
+	j := &jsonOrder{
+		Number:   o.Number,
+		Status:   o.Status,
+		Accrual:  accrual,
+		UploadAt: o.UploadAt,
+	}
+	return json.Marshal(j)
+}
+
+func (o *Order) UnmarshalJSON(data []byte) error {
+	j := &jsonOrder{}
+	err := json.Unmarshal(data, j)
+	if err != nil {
+		return err
+	}
+	if !IsValidStatus(j.Status) {
+		return ErrInvalidStatus
+	}
+	o.Status = j.Status
+	if j.Accrual != nil {
+		accrual := int64(*j.Accrual) * 100
+		o.Accrual = &accrual
+	}
+	o.Number = j.Number
+	o.UploadAt = j.UploadAt
+	return nil
+}
+
+func IsValidStatus(status Status) bool {
+	for _, validStatus := range statuses {
+		if status == validStatus {
+			return true
+		}
+	}
+	return false
 }
