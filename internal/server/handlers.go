@@ -169,7 +169,7 @@ func (s *Server) UserBalanceWithdraw(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
 	if w.Sum > balance.Current {
-		return c.String(402, "not enough balance")
+		return c.String(http.StatusPaymentRequired, "not enough balance")
 	}
 	err = s.db.AddWithdrawal(req.Context(), w)
 	if err != nil {
@@ -183,7 +183,20 @@ func (s *Server) UserBalanceWithdraw(c echo.Context) error {
 }
 
 func (s *Server) UserWithdrawals(c echo.Context) error {
-	return nil
+	req := c.Request()
+	header := req.Header.Get(echo.HeaderAuthorization)
+	login, err := auth.GetLogin(header, JwtSecret)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, err.Error())
+	}
+	withdrawals, err := s.db.GetWithdrawals(req.Context(), login)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, err.Error())
+	}
+	if len(withdrawals) == 0 {
+		return c.NoContent(http.StatusNoContent)
+	}
+	return c.JSON(http.StatusOK, withdrawals)
 }
 
 func getBalance(ctx context.Context, db db.Database, owner string) (*user.Balance, error) {
