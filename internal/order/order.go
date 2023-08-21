@@ -125,7 +125,7 @@ func (o *Order) UnmarshalJSON(data []byte) error {
 	}
 	o.Status = j.Status
 	if j.Accrual != nil {
-		accrual := int64(*j.Accrual) * 100
+		accrual := int64(*j.Accrual * 100)
 		o.Accrual = &accrual
 	}
 	o.Number = j.Number

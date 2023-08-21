@@ -221,6 +221,10 @@ func (pg *PG) AddWithdrawal(ctx context.Context, wd *order.Withdraw) error {
 	)
 	if err != nil {
 		logger.Logger.Error(err)
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			return db.ErrWithdrawAdded
+		}
 		return fmt.Errorf("%s: %w", db.ErrSomeWrong, err)
 	}
 	return nil
@@ -268,13 +272,13 @@ func (pg *PG) GetAccruals(ctx context.Context, owner string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	var accrual int64
+	var accrual sql.NullInt64
 	row := stmt.QueryRowContext(ctx, owner)
 	err = row.Scan(&accrual)
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", db.ErrSomeWrong, err)
 	}
-	return accrual, nil
+	return accrual.Int64, nil
 }
 
 func (pg *PG) GetWithdrawn(ctx context.Context, owner string) (int64, error) {
@@ -282,11 +286,11 @@ func (pg *PG) GetWithdrawn(ctx context.Context, owner string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	var withdrawn int64
+	var withdrawn sql.NullInt64
 	row := stmt.QueryRowContext(ctx, owner)
 	err = row.Scan(&withdrawn)
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", db.ErrSomeWrong, err)
 	}
-	return withdrawn, nil
+	return withdrawn.Int64, nil
 }

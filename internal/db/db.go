@@ -14,6 +14,7 @@ var (
 	ErrOrderNotFound  = errors.New(`order not found`)
 	ErrOrderAdded     = errors.New(`order was added`)
 	ErrOtherUserOrder = errors.New(`order was added by other user`)
+	ErrWithdrawAdded  = errors.New(`order was payed`)
 	ErrSomeWrong      = errors.New(`some wrong`)
 )
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/Nexadis/gophmart/internal/db"
 	"github.com/Nexadis/gophmart/internal/logger"
@@ -146,7 +147,39 @@ func (s *Server) UserBalance(c echo.Context) error {
 }
 
 func (s *Server) UserBalanceWithdraw(c echo.Context) error {
-	return nil
+	req := c.Request()
+	header := req.Header.Get(echo.HeaderAuthorization)
+	login, err := auth.GetLogin(header, JwtSecret)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, err.Error())
+	}
+	w := &order.Withdraw{}
+	err = c.Bind(w)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, err.Error())
+	}
+	if !w.Order.IsValid() {
+		return c.NoContent(http.StatusNotAcceptable)
+	}
+	w.Owner = login
+	t := time.Now()
+	w.ProcessedAt = &t
+	balance, err := getBalance(req.Context(), s.db, login)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, err.Error())
+	}
+	if w.Sum > balance.Current {
+		return c.String(402, "not enough balance")
+	}
+	err = s.db.AddWithdrawal(req.Context(), w)
+	if err != nil {
+		if errors.Is(err, db.ErrWithdrawAdded) {
+			return c.String(http.StatusConflict, err.Error())
+		}
+		return c.String(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.NoContent(http.StatusOK)
 }
 
 func (s *Server) UserWithdrawals(c echo.Context) error {
