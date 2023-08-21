@@ -35,9 +35,6 @@ func (w *Withdraw) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	if !j.Order.IsValid() {
-		return ErrInvalidNum
-	}
 	w.Owner = j.Owner
 	w.Order = j.Order
 	w.Sum = int64(j.Sum * 100)

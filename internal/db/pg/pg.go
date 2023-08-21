@@ -105,7 +105,7 @@ func (pg *PG) AddUser(ctx context.Context, user *user.User) error {
 }
 
 func (pg *PG) GetUser(ctx context.Context, login string) (*user.User, error) {
-	stmt, err := pg.db.Prepare("SELECT login, hashpass FROM Users WHERE login=$1")
+	stmt, err := pg.db.Prepare("SELECT \"login\", \"hashpass\" FROM Users WHERE login=$1")
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (pg *PG) GetUser(ctx context.Context, login string) (*user.User, error) {
 }
 
 func (pg *PG) AddOrder(ctx context.Context, o *order.Order) error {
-	stmt, err := pg.db.Prepare("INSERT INTO Orders(number, owner, status, accrual, uploaded_at) values($1,$2,$3,$4,$5)")
+	stmt, err := pg.db.Prepare("INSERT INTO Orders(\"number\", \"owner\", \"status\", \"accrual\", \"uploaded_at\") values($1,$2,$3,$4,$5)")
 	if err != nil {
 		return err
 	}
@@ -152,7 +152,7 @@ func (pg *PG) AddOrder(ctx context.Context, o *order.Order) error {
 }
 
 func (pg *PG) GetOrder(ctx context.Context, number order.OrderNumber) (*order.Order, error) {
-	stmt, err := pg.db.Prepare("SELECT number, owner, status, accrual, uploaded_at FROM Orders WHERE number=$1 ORDER BY uploaded_at")
+	stmt, err := pg.db.Prepare("SELECT \"number\", \"owner\", \"status\", \"accrual\", \"uploaded_at\" FROM Orders WHERE number=$1 ORDER BY uploaded_at")
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +172,7 @@ func (pg *PG) GetOrder(ctx context.Context, number order.OrderNumber) (*order.Or
 }
 
 func (pg *PG) GetOrders(ctx context.Context, owner string) ([]*order.Order, error) {
-	stmt, err := pg.db.Prepare("SELECT number, owner, status, accrual, uploaded_at FROM Orders WHERE owner=$1 ORDER BY uploaded_at DESC")
+	stmt, err := pg.db.Prepare("SELECT \"number\", \"owner\", \"status\", \"accrual\", \"uploaded_at\" FROM Orders WHERE owner=$1 ORDER BY uploaded_at DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ func (pg *PG) GetOrders(ctx context.Context, owner string) ([]*order.Order, erro
 }
 
 func (pg *PG) AddWithdrawal(ctx context.Context, wd *order.Withdraw) error {
-	stmt, err := pg.db.Prepare("INSERT INTO Withdrawals(order, owner, sum, processed_at) values($1,$2,$3,$4)")
+	stmt, err := pg.db.Prepare("INSERT INTO Withdrawals(\"order\", \"owner\", \"sum\", \"processed_at\") values($1,$2,$3,$4)")
 	if err != nil {
 		return err
 	}
@@ -231,7 +231,7 @@ func (pg *PG) AddWithdrawal(ctx context.Context, wd *order.Withdraw) error {
 }
 
 func (pg *PG) GetWithdrawals(ctx context.Context, owner string) ([]*order.Withdraw, error) {
-	stmt, err := pg.db.Prepare("SELECT order, owner, sum, processed_at FROM Withdrawals WHERE owner=$1 ORDER BY processed_at DESC")
+	stmt, err := pg.db.Prepare("SELECT \"order\", \"owner\", \"sum\", \"processed_at\" FROM Withdrawals WHERE owner=$1 ORDER BY processed_at DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +268,7 @@ func (pg *PG) GetWithdrawals(ctx context.Context, owner string) ([]*order.Withdr
 }
 
 func (pg *PG) GetAccruals(ctx context.Context, owner string) (int64, error) {
-	stmt, err := pg.db.Prepare("SELECT SUM(accrual) FROM Orders WHERE owner=$1")
+	stmt, err := pg.db.Prepare("SELECT SUM(\"accrual\") FROM Orders WHERE owner=$1")
 	if err != nil {
 		return 0, err
 	}
@@ -282,7 +282,7 @@ func (pg *PG) GetAccruals(ctx context.Context, owner string) (int64, error) {
 }
 
 func (pg *PG) GetWithdrawn(ctx context.Context, owner string) (int64, error) {
-	stmt, err := pg.db.Prepare("SELECT SUM(sum) as sum FROM Withdrawals WHERE owner=$1")
+	stmt, err := pg.db.Prepare("SELECT SUM(\"sum\") as sum FROM Withdrawals WHERE owner=$1")
 	if err != nil {
 		return 0, err
 	}

@@ -124,6 +124,7 @@ func (s *Server) UserOrdersGet(c echo.Context) error {
 	}
 	orders, err := s.db.GetOrders(req.Context(), login)
 	if err != nil {
+		logger.Logger.Error(err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	if len(orders) == 0 {
@@ -159,7 +160,7 @@ func (s *Server) UserBalanceWithdraw(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
 	if !w.Order.IsValid() {
-		return c.NoContent(http.StatusNotAcceptable)
+		return c.NoContent(http.StatusUnprocessableEntity)
 	}
 	w.Owner = login
 	t := time.Now()
