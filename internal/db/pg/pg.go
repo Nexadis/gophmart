@@ -232,9 +232,6 @@ func (pg *PG) GetOrder(ctx context.Context, number order.OrderNumber) (*order.Or
 		}
 		return nil, fmt.Errorf("%s: %w", db.ErrSomeWrong, err)
 	}
-	if err != nil {
-		return nil, err
-	}
 	return o, nil
 }
 
