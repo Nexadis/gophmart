@@ -28,6 +28,8 @@ type OrdersStore interface {
 	GetOrder(ctx context.Context, number order.OrderNumber) (*order.Order, error)
 	GetOrders(ctx context.Context, owner string) ([]*order.Order, error)
 	GetAccruals(ctx context.Context, owner string) (int64, error)
+	UpdateOrder(ctx context.Context, o *order.Order) error
+	GetWithStatus(ctx context.Context, s order.Status) ([]order.OrderNumber, error)
 }
 
 type WithdrawalsStore interface {

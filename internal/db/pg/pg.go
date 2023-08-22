@@ -151,8 +151,75 @@ func (pg *PG) AddOrder(ctx context.Context, o *order.Order) error {
 	return nil
 }
 
+func (pg *PG) UpdateOrder(ctx context.Context, o *order.Order) error {
+	stmt, err := pg.db.Prepare("UPDATE Orders SET \"status\"=$1, \"accrual\"=$2 WHERE number=$3")
+	if err != nil {
+		return err
+	}
+	_, err = stmt.ExecContext(ctx,
+		o.Status,
+		o.Accrual,
+		o.Number,
+	)
+	if err != nil {
+		logger.Logger.Error(err)
+		return fmt.Errorf("%s: %w", db.ErrSomeWrong, err)
+	}
+	return nil
+}
+
+func (pg *PG) GetWithStatus(ctx context.Context, s order.Status) ([]order.OrderNumber, error) {
+	stmt, err := pg.db.Prepare("SELECT \"number\" FROM Orders WHERE status=$1 ORDER BY uploaded_at")
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			return nil, pgErr
+		}
+	}
+
+	logger.Logger.Infof("Get With Status %s", s)
+	rows, err := stmt.QueryContext(ctx, &s)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			return nil, pgErr
+		}
+	}
+	defer rows.Close()
+	logger.Logger.Info("Query")
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+
+	orders := make([]order.OrderNumber, 0, len(columns))
+
+	for rows.Next() {
+		var o order.Order
+		err = rows.Scan(&o.Number)
+		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) {
+				return nil, pgErr
+			}
+		}
+		orders = append(orders, o.Number)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			return nil, pgErr
+		}
+	}
+
+	return orders, nil
+}
+
 func (pg *PG) GetOrder(ctx context.Context, number order.OrderNumber) (*order.Order, error) {
-	stmt, err := pg.db.Prepare("SELECT \"number\", \"owner\", \"status\", \"accrual\", \"uploaded_at\" FROM Orders WHERE number=$1 ORDER BY uploaded_at")
+	stmt, err := pg.db.Prepare("SELECT \"number\", \"owner\", \"status\", \"accrual\", \"uploaded_at\" FROM Orders WHERE \"number\"=$1 ORDER BY \"uploaded_at\"")
 	if err != nil {
 		return nil, err
 	}

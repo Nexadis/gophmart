@@ -81,6 +81,14 @@ func (tdb *testDB) AddOrder(ctx context.Context, o *order.Order) error {
 	return nil
 }
 
+func (tdb *testDB) UpdateOrder(ctx context.Context, o *order.Order) error {
+	return nil
+}
+
+func (tdb *testDB) GetWithStatus(ctx context.Context, s order.Status) ([]order.OrderNumber, error) {
+	return nil, nil
+}
+
 func (tdb *testDB) AddOrders(ctx context.Context, orders []*order.Order) error {
 	return nil
 }

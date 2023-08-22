@@ -15,7 +15,7 @@ const (
 	StatusNew        Status = "NEW"
 	StatusProcessing Status = "PROCESSING"
 	StatusInvalid    Status = "INVALID"
-	SatusProcessed   Status = "PROCESSED"
+	StatusProcessed  Status = "PROCESSED"
 )
 
 var statuses []Status
@@ -23,7 +23,7 @@ var statuses []Status
 func init() {
 	statuses = []Status{
 		StatusNew,
-		SatusProcessed,
+		StatusProcessed,
 		StatusInvalid,
 		StatusProcessing,
 	}

@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 
+	"github.com/Nexadis/gophmart/internal/client"
 	"github.com/Nexadis/gophmart/internal/db"
 	"github.com/Nexadis/gophmart/internal/db/pg"
 	"github.com/Nexadis/gophmart/internal/logger"
@@ -39,6 +40,15 @@ func New(config *Config) (*Server, error) {
 
 func (s *Server) Run() error {
 	prepareServer(s)
+	errors := make(chan error)
+	defer close(errors)
+	client := client.New(s.config.AccrualSystemAddress, s.db)
+	go client.GetAccruals(errors)
+	go func() {
+		for err := range errors {
+			logger.Logger.Error(err)
+		}
+	}()
 	return s.e.Start(s.config.RunAddress)
 }
 
