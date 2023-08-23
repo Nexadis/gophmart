@@ -11,7 +11,7 @@ import (
 	"github.com/Nexadis/gophmart/internal/order"
 	"github.com/Nexadis/gophmart/internal/user"
 	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -94,7 +94,7 @@ func (pg *PG) AddUser(ctx context.Context, user *user.User) error {
 	)
 	if err != nil {
 		logger.Logger.Error(err)
-		var pgErr *pgconn.PgError
+		var pgErr pgx.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 			return db.ErrUserIsExist
 		}
@@ -135,7 +135,7 @@ func (pg *PG) AddOrder(ctx context.Context, o *order.Order) error {
 	)
 	if err != nil {
 		logger.Logger.Error(err)
-		var pgErr *pgconn.PgError
+		var pgErr pgx.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 			existOrder, err := pg.GetOrder(ctx, o.Number)
 			if err != nil {
@@ -171,7 +171,7 @@ func (pg *PG) UpdateOrder(ctx context.Context, o *order.Order) error {
 func (pg *PG) GetWithStatus(ctx context.Context, s order.Status) ([]order.OrderNumber, error) {
 	stmt, err := pg.db.Prepare("SELECT \"number\" FROM Orders WHERE status=$1 ORDER BY uploaded_at")
 	if err != nil {
-		var pgErr *pgconn.PgError
+		var pgErr pgx.PgError
 		if errors.As(err, &pgErr) {
 			return nil, pgErr
 		}
@@ -179,7 +179,7 @@ func (pg *PG) GetWithStatus(ctx context.Context, s order.Status) ([]order.OrderN
 
 	rows, err := stmt.QueryContext(ctx, &s)
 	if err != nil {
-		var pgErr *pgconn.PgError
+		var pgErr pgx.PgError
 		if errors.As(err, &pgErr) {
 			return nil, pgErr
 		}
@@ -197,7 +197,7 @@ func (pg *PG) GetWithStatus(ctx context.Context, s order.Status) ([]order.OrderN
 		var o order.Order
 		err = rows.Scan(&o.Number)
 		if err != nil {
-			var pgErr *pgconn.PgError
+			var pgErr pgx.PgError
 			if errors.As(err, &pgErr) {
 				return nil, pgErr
 			}
@@ -207,7 +207,7 @@ func (pg *PG) GetWithStatus(ctx context.Context, s order.Status) ([]order.OrderN
 
 	err = rows.Err()
 	if err != nil {
-		var pgErr *pgconn.PgError
+		var pgErr pgx.PgError
 		if errors.As(err, &pgErr) {
 			return nil, pgErr
 		}
@@ -283,7 +283,7 @@ func (pg *PG) AddWithdrawal(ctx context.Context, wd *order.Withdraw) error {
 	)
 	if err != nil {
 		logger.Logger.Error(err)
-		var pgErr *pgconn.PgError
+		var pgErr pgx.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 			return db.ErrWithdrawAdded
 		}
