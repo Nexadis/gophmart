@@ -11,7 +11,7 @@ import (
 	"github.com/Nexadis/gophmart/internal/order"
 	"github.com/Nexadis/gophmart/internal/user"
 	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -94,8 +94,8 @@ func (pg *PG) AddUser(ctx context.Context, user *user.User) error {
 	)
 	if err != nil {
 		logger.Logger.Error(err)
-		var pgErr pgx.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.SQLState()) {
 			return db.ErrUserIsExist
 		}
 		return fmt.Errorf("%s: %w", db.ErrSomeWrong, err)
@@ -135,18 +135,19 @@ func (pg *PG) AddOrder(ctx context.Context, o *order.Order) error {
 	)
 	if err != nil {
 		logger.Logger.Error(err)
-		var pgErr pgx.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.SQLState()) {
 			existOrder, err := pg.GetOrder(ctx, o.Number)
 			if err != nil {
 				return fmt.Errorf("%s: %w", db.ErrSomeWrong, err)
 			}
-			if existOrder.Number == o.Number {
+			logger.Logger.Errorf("Add order by %s but exist by %s", o.Owner, existOrder.Owner)
+			if existOrder.Owner == o.Owner {
 				return db.ErrOrderAdded
 			}
 			return db.ErrOtherUserOrder
 		}
-		return fmt.Errorf("%s: %w", db.ErrSomeWrong, err)
+		return fmt.Errorf("%s: %s", db.ErrSomeWrong, pgErr.Code)
 	}
 	return nil
 }
@@ -171,18 +172,12 @@ func (pg *PG) UpdateOrder(ctx context.Context, o *order.Order) error {
 func (pg *PG) GetWithStatus(ctx context.Context, s order.Status) ([]order.OrderNumber, error) {
 	stmt, err := pg.db.Prepare("SELECT \"number\" FROM Orders WHERE status=$1 ORDER BY uploaded_at")
 	if err != nil {
-		var pgErr pgx.PgError
-		if errors.As(err, &pgErr) {
-			return nil, pgErr
-		}
+		return nil, err
 	}
 
 	rows, err := stmt.QueryContext(ctx, &s)
 	if err != nil {
-		var pgErr pgx.PgError
-		if errors.As(err, &pgErr) {
-			return nil, pgErr
-		}
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -197,20 +192,14 @@ func (pg *PG) GetWithStatus(ctx context.Context, s order.Status) ([]order.OrderN
 		var o order.Order
 		err = rows.Scan(&o.Number)
 		if err != nil {
-			var pgErr pgx.PgError
-			if errors.As(err, &pgErr) {
-				return nil, pgErr
-			}
+			return nil, err
 		}
 		orders = append(orders, o.Number)
 	}
 
 	err = rows.Err()
 	if err != nil {
-		var pgErr pgx.PgError
-		if errors.As(err, &pgErr) {
-			return nil, pgErr
-		}
+		return nil, err
 	}
 
 	return orders, nil
@@ -283,8 +272,8 @@ func (pg *PG) AddWithdrawal(ctx context.Context, wd *order.Withdraw) error {
 	)
 	if err != nil {
 		logger.Logger.Error(err)
-		var pgErr pgx.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.SQLState()) {
 			return db.ErrWithdrawAdded
 		}
 		return fmt.Errorf("%s: %w", db.ErrSomeWrong, err)
