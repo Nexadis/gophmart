@@ -97,7 +97,7 @@ func (s *Server) UserOrdersSave(c echo.Context) error {
 	if err != nil {
 		switch {
 		case errors.Is(err, order.ErrInvalidNum):
-			return c.String(http.StatusNotAcceptable, err.Error())
+			return c.String(http.StatusUnprocessableEntity, err.Error())
 		}
 		return c.String(http.StatusBadRequest, err.Error())
 	}
