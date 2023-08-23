@@ -44,11 +44,6 @@ func (s *Server) Run() error {
 	defer close(errors)
 	client := client.New(s.config.AccrualSystemAddress, s.db)
 	go client.GetAccruals(errors)
-	go func() {
-		for err := range errors {
-			logger.Logger.Error(err)
-		}
-	}()
 	return s.e.Start(s.config.RunAddress)
 }
 

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/Nexadis/gophmart/internal/db"
-	"github.com/Nexadis/gophmart/internal/logger"
 	"github.com/Nexadis/gophmart/internal/order"
 	"github.com/go-resty/resty/v2"
 )
@@ -25,7 +24,7 @@ type Client struct {
 
 func New(addr string, db db.OrdersStore) *Client {
 	return &Client{
-		client: resty.New().SetDebug(true),
+		client: resty.New(), //.SetDebug(true),
 		Addr:   addr,
 		db:     db,
 	}
@@ -49,6 +48,10 @@ func (c *Client) GetAccruals(errors chan error) {
 				errors <- err
 			}
 			for _, number := range orderNumbers {
+				c.db.UpdateOrder(context.Background(), &order.Order{
+					Number: number,
+					Status: order.StatusProcessing,
+				})
 				orders <- number
 			}
 		}
@@ -77,8 +80,8 @@ func (c *Client) GetAccruals(errors chan error) {
 		case http.StatusTooManyRequests:
 			time.Sleep(60 * time.Second)
 		case http.StatusNoContent:
+			time.Sleep(1 * time.Second)
 			err = ErrInternal
-			logger.Logger.Error(orderNumber)
 			errors <- fmt.Errorf(`%s order: %v`, err, orderNumber)
 		}
 	}

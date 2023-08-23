@@ -177,7 +177,6 @@ func (pg *PG) GetWithStatus(ctx context.Context, s order.Status) ([]order.OrderN
 		}
 	}
 
-	logger.Logger.Infof("Get With Status %s", s)
 	rows, err := stmt.QueryContext(ctx, &s)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -186,7 +185,6 @@ func (pg *PG) GetWithStatus(ctx context.Context, s order.Status) ([]order.OrderN
 		}
 	}
 	defer rows.Close()
-	logger.Logger.Info("Query")
 
 	columns, err := rows.Columns()
 	if err != nil {

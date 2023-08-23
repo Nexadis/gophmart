@@ -1,11 +1,18 @@
 package auth
 
 import (
+	"errors"
 	"net/http"
-	"strings"
 	"time"
 
+	"github.com/Nexadis/gophmart/internal/logger"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
+)
+
+var (
+	ErrJwt           = errors.New("jwt token missing or invalid")
+	ErrLoginNotFound = errors.New("login not found in jwt")
 )
 
 func CookieToken(value string) *http.Cookie {
@@ -16,13 +23,19 @@ func CookieToken(value string) *http.Cookie {
 	}
 }
 
-func GetLogin(cookie string, key []byte) (string, error) {
-	cookie = strings.TrimSpace(cookie)
-	tokenString := strings.Split(cookie, " ")[1]
-	token, err := GetToken(tokenString, key)
-	if err != nil {
-		return "", err
+func GetLogin(c echo.Context) (string, error) {
+	token, ok := c.Get("user").(*jwt.Token)
+	if !ok {
+		return "", ErrJwt
 	}
-	claims := GetClaims(token)
-	return claims.Login, nil
+	logger.Logger.Infof("got token %s", token.Claims)
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", errors.New("can't cast to claims")
+	}
+	login, ok := claims["login"].(string)
+	if !ok {
+		return "", ErrLoginNotFound
+	}
+	return login, nil
 }

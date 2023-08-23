@@ -35,6 +35,7 @@ func (s *Server) UserRegister(c echo.Context) error {
 			return c.NoContent(http.StatusInternalServerError)
 		}
 	}
+	logger.Logger.Debugf("Register user:%v", *u)
 
 	token, err := auth.NewToken(u.Login, JwtSecret)
 	if err != nil {
@@ -53,6 +54,7 @@ func (s *Server) UserLogin(c echo.Context) error {
 		logger.Logger.Errorln(err)
 		return c.String(http.StatusBadRequest, InvalidReq)
 	}
+	logger.Logger.Debug("User Login:", *u)
 	savedUser, err := s.db.GetUser(c.Request().Context(), u.Login)
 	if err != nil {
 		logger.Logger.Error(err)
@@ -85,9 +87,7 @@ func (s *Server) UserOrdersSave(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
 	defer req.Body.Close()
-	logger.Logger.Info(body)
-	header := req.Header.Get(echo.HeaderAuthorization)
-	login, err := auth.GetLogin(header, JwtSecret)
+	login, err := auth.GetLogin(c)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
@@ -116,12 +116,11 @@ func (s *Server) UserOrdersSave(c echo.Context) error {
 
 func (s *Server) UserOrdersGet(c echo.Context) error {
 	req := c.Request()
-	header := req.Header.Get(echo.HeaderAuthorization)
-	logger.Logger.Info(header)
-	login, err := auth.GetLogin(header, JwtSecret)
+	login, err := auth.GetLogin(c)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
+
 	orders, err := s.db.GetOrders(req.Context(), login)
 	if err != nil {
 		logger.Logger.Error(err)
@@ -135,8 +134,7 @@ func (s *Server) UserOrdersGet(c echo.Context) error {
 
 func (s *Server) UserBalance(c echo.Context) error {
 	req := c.Request()
-	header := req.Header.Get(echo.HeaderAuthorization)
-	login, err := auth.GetLogin(header, JwtSecret)
+	login, err := auth.GetLogin(c)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
@@ -149,8 +147,7 @@ func (s *Server) UserBalance(c echo.Context) error {
 
 func (s *Server) UserBalanceWithdraw(c echo.Context) error {
 	req := c.Request()
-	header := req.Header.Get(echo.HeaderAuthorization)
-	login, err := auth.GetLogin(header, JwtSecret)
+	login, err := auth.GetLogin(c)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
@@ -185,8 +182,7 @@ func (s *Server) UserBalanceWithdraw(c echo.Context) error {
 
 func (s *Server) UserWithdrawals(c echo.Context) error {
 	req := c.Request()
-	header := req.Header.Get(echo.HeaderAuthorization)
-	login, err := auth.GetLogin(header, JwtSecret)
+	login, err := auth.GetLogin(c)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
