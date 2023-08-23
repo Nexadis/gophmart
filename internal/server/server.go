@@ -3,6 +3,8 @@ package server
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"sync"
+	"time"
 
 	"github.com/Nexadis/gophmart/internal/client"
 	"github.com/Nexadis/gophmart/internal/db"
@@ -41,10 +43,26 @@ func New(config *Config) (*Server, error) {
 func (s *Server) Run() error {
 	prepareServer(s)
 	errors := make(chan error)
+	done := make(chan struct{})
 	defer close(errors)
 	client := client.New(s.config.AccrualSystemAddress, s.db)
-	go client.GetAccruals(errors)
-	return s.e.Start(s.config.RunAddress)
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+	go client.GetAccruals(done, wg, errors)
+	go func() {
+		for err := range errors {
+			time.Sleep(1 * time.Second)
+			logger.Logger.Error(err)
+		}
+		wg.Done()
+	}()
+	wg.Add(1)
+	s.e.Start(s.config.RunAddress)
+	close(done)
+	wg.Done()
+	close(errors)
+	wg.Wait()
+	return nil
 }
 
 func prepareServer(s *Server) {

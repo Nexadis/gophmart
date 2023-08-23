@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/Nexadis/gophmart/internal/db"
@@ -30,12 +31,20 @@ func New(addr string, db db.OrdersStore) *Client {
 	}
 }
 
-func (c *Client) GetAccruals(errors chan error) {
+func (c *Client) GetAccruals(done chan struct{}, wg *sync.WaitGroup, errors chan error) {
 	endpoint := fmt.Sprintf("http://%s%s", c.Addr, APIGetAccrual)
 	a := &Accrual{}
 	orders := make(chan order.OrderNumber)
+	wg.Add(1)
 	go func() {
 		for {
+			select {
+			case <-done:
+				wg.Done()
+				close(errors)
+				return
+			default:
+			}
 			orderNumbers, err := c.db.GetWithStatus(context.Background(), order.StatusProcessing)
 			if err != nil {
 				errors <- err
@@ -78,6 +87,13 @@ func (c *Client) GetAccruals(errors chan error) {
 		case http.StatusNoContent:
 			err = ErrInternal
 			errors <- fmt.Errorf(`%s order: %v`, err, orderNumber)
+		}
+		select {
+		case <-done:
+			wg.Done()
+			close(errors)
+			return
+		default:
 		}
 	}
 }
