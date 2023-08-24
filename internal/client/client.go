@@ -77,7 +77,7 @@ func (c *Client) GetAccruals(done chan struct{}, errors chan error) {
 			switch err {
 			case nil:
 				o.Status = accrualToOrderStatus(a.Status)
-				o.Accrual = &a.Accrual
+				o.Accrual = a.Accrual
 			case ErrNotRegistered:
 				o.Status = order.StatusInvalid
 			default:

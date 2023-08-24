@@ -11,6 +11,8 @@ import (
 
 type Status string
 
+type Points int64
+
 const (
 	StatusNew        Status = "NEW"
 	StatusProcessing Status = "PROCESSING"
@@ -18,10 +20,10 @@ const (
 	StatusProcessed  Status = "PROCESSED"
 )
 
-var statuses []Status
+var Statuses []Status
 
 func init() {
-	statuses = []Status{
+	Statuses = []Status{
 		StatusNew,
 		StatusProcessed,
 		StatusInvalid,
@@ -40,7 +42,7 @@ type Order struct {
 	Owner      string      `json:"-"`
 	Number     OrderNumber `json:"number"`
 	Status     Status      `json:"status"`
-	Accrual    *int64      `json:"accrual,omitempty"`
+	Accrual    *Points     `json:"accrual,omitempty"`
 	UploadedAt *time.Time  `json:"uploaded_at"`
 }
 
@@ -92,52 +94,20 @@ func (o OrderNumber) IsValid() bool {
 	return math.Mod(float64(sum), 10) == 0
 }
 
-type jsonOrder struct {
-	Number     OrderNumber `json:"number"`
-	Status     Status      `json:"status"`
-	Accrual    *float64    `json:"accrual,omitempty"`
-	UploadedAt *time.Time  `json:"uploaded_at"`
+func (p *Points) MarshalJSON() ([]byte, error) {
+	points := float64(*p) / 100
+	return json.Marshal(&points)
 }
 
-func (o Order) MarshalJSON() ([]byte, error) {
-	var accrual *float64
-	if o.Accrual != nil {
-		a := float64(*o.Accrual) / 100
-		accrual = &a
-	}
-	j := &jsonOrder{
-		Number:     o.Number,
-		Status:     o.Status,
-		Accrual:    accrual,
-		UploadedAt: o.UploadedAt,
-	}
-	return json.Marshal(j)
-}
-
-func (o *Order) UnmarshalJSON(data []byte) error {
-	j := &jsonOrder{}
-	err := json.Unmarshal(data, j)
+func (p *Points) UnmarshalJSON(data []byte) error {
+	var points *float64
+	err := json.Unmarshal(data, points)
 	if err != nil {
 		return err
 	}
-	if !IsValidStatus(j.Status) {
-		return ErrInvalidStatus
+	if p == nil {
+		return nil
 	}
-	o.Status = j.Status
-	if j.Accrual != nil {
-		accrual := int64(*j.Accrual * 100)
-		o.Accrual = &accrual
-	}
-	o.Number = j.Number
-	o.UploadedAt = j.UploadedAt
+	*p = Points(*points * 100)
 	return nil
-}
-
-func IsValidStatus(status Status) bool {
-	for _, validStatus := range statuses {
-		if status == validStatus {
-			return true
-		}
-	}
-	return false
 }

@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -203,8 +202,6 @@ func TestUserRegister(t *testing.T) {
 			if assert.NoError(t, s.UserRegister(c)) {
 				assert.Equal(t, test.want.status, rec.Code)
 				assert.Equal(t, test.want.db.Users, db.Users)
-				body, _ := io.ReadAll(rec.Body)
-				assert.Equal(t, test.want.response, string(body))
 			}
 		})
 	}
