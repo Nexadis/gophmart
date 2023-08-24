@@ -44,25 +44,29 @@ func (s *Server) Run() error {
 	prepareServer(s)
 	errors := make(chan error)
 	done := make(chan struct{})
-	defer close(errors)
-	client := client.New(s.config.AccrualSystemAddress, s.db)
+	client := client.New(s.config.AccrualSystemAddress, s.db, time.Duration(s.config.Wait)*time.Second)
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
-	go client.GetAccruals(done, wg, errors)
 	go func() {
-		for err := range errors {
-			time.Sleep(1 * time.Second)
-			logger.Logger.Error(err)
-		}
+		client.GetAccruals(done, errors)
 		wg.Done()
 	}()
-	wg.Add(1)
-	s.e.Start(s.config.RunAddress)
+	go func() {
+		for {
+			select {
+			case err := <-errors:
+				logger.Logger.Error(err)
+			case <-done:
+				wg.Done()
+				return
+			}
+		}
+	}()
+	err := s.e.Start(s.config.RunAddress)
 	close(done)
-	wg.Done()
 	close(errors)
 	wg.Wait()
-	return nil
+	return err
 }
 
 func prepareServer(s *Server) {
