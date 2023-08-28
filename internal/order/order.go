@@ -100,12 +100,12 @@ func (p Points) MarshalJSON() ([]byte, error) {
 }
 
 func (p *Points) UnmarshalJSON(data []byte) error {
-	var points *float64
-	err := json.Unmarshal(data, *points)
+	var points float64
+	err := json.Unmarshal(data, &points)
 	if err != nil {
 		return err
 	}
-	ptmp := Points(*points * 100)
-	*p = ptmp
+	*p = Points(points * 100)
+
 	return nil
 }
