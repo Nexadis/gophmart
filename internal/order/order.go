@@ -105,9 +105,6 @@ func (p *Points) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	if p == nil {
-		return nil
-	}
 	*p = Points(*points * 100)
 	return nil
 }
