@@ -33,11 +33,16 @@ func (c *Config) Parse() error {
 	if err := env.Parse(c); err != nil {
 		return err
 	}
-	logger.Logger.Info(`Config:
+	logger.Logger.Infof(`Config:
 	RunAddress: %q
 	DBUri: %q
 	AccrualSystemAddress: %q
 	JwtSecret: %q
-	Interval get Accruals: %d`)
+	Interval get Accruals: %d`,
+		c.RunAddress,
+		c.DBURI,
+		c.AccrualSystemAddress,
+		c.JwtSecret,
+		c.Wait)
 	return nil
 }
