@@ -96,7 +96,7 @@ func (c *Client) GetAccruals(done chan struct{}, errors chan error) {
 }
 
 func (c *Client) getOrderStatus(number order.OrderNumber) (*Accrual, error) {
-	endpoint := fmt.Sprintf("http://%s%s", c.Addr, APIGetAccrual)
+	endpoint := fmt.Sprintf("%s%s", c.Addr, APIGetAccrual)
 	a := &Accrual{}
 	resp, err := c.client.R().
 		SetPathParam("number", string(number)).

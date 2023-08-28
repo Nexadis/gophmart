@@ -3,6 +3,7 @@ package server
 import (
 	"flag"
 
+	"github.com/Nexadis/gophmart/internal/logger"
 	"github.com/caarlos0/env/v9"
 )
 
@@ -32,5 +33,11 @@ func (c *Config) Parse() error {
 	if err := env.Parse(c); err != nil {
 		return err
 	}
+	logger.Logger.Info(`Config:
+	RunAddress: %q
+	DBUri: %q
+	AccrualSystemAddress: %q
+	JwtSecret: %q
+	Interval get Accruals: %d`)
 	return nil
 }
