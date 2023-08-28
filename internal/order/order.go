@@ -101,7 +101,7 @@ func (p Points) MarshalJSON() ([]byte, error) {
 
 func (p *Points) UnmarshalJSON(data []byte) error {
 	var points *float64
-	err := json.Unmarshal(data, points)
+	err := json.Unmarshal(data, *points)
 	if err != nil {
 		return err
 	}
