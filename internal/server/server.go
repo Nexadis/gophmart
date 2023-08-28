@@ -46,26 +46,15 @@ func (s *Server) Run() error {
 	done := make(chan struct{})
 	client := client.New(s.config.AccrualSystemAddress, s.db, time.Duration(s.config.Wait)*time.Second)
 	wg := &sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(1)
 	go func() {
 		client.GetAccruals(done, errors)
 		wg.Done()
 	}()
-	go func() {
-		for {
-			select {
-			case err := <-errors:
-				logger.Logger.Error(err)
-			case <-done:
-				wg.Done()
-				return
-			}
-		}
-	}()
 	err := s.e.Start(s.config.RunAddress)
 	close(done)
-	close(errors)
 	wg.Wait()
+	close(errors)
 	return err
 }
 

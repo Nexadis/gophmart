@@ -52,12 +52,12 @@ func (c *Client) GetAccruals(done chan struct{}, errors chan error) {
 			case <-t.C:
 				PrcessingOrders, err := c.db.GetWithStatus(context.Background(), order.StatusProcessing)
 				if err != nil {
-					errors <- err
+					logger.Logger.Error(err)
 					continue
 				}
 				NewOrders, err := c.db.GetWithStatus(context.Background(), order.StatusNew)
 				if err != nil {
-					errors <- err
+					logger.Logger.Error(err)
 					continue
 				}
 				Orders := append(PrcessingOrders, NewOrders...)
@@ -81,12 +81,12 @@ func (c *Client) GetAccruals(done chan struct{}, errors chan error) {
 			case ErrNotRegistered:
 				o.Status = order.StatusInvalid
 			default:
-				errors <- err
+				logger.Logger.Error(err)
 				continue
 			}
 			err = c.db.UpdateOrder(context.Background(), o)
 			if err != nil {
-				errors <- err
+				logger.Logger.Error(err)
 			}
 		case <-done:
 			wg.Wait()

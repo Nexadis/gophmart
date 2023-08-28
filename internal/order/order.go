@@ -94,9 +94,9 @@ func (o OrderNumber) IsValid() bool {
 	return math.Mod(float64(sum), 10) == 0
 }
 
-func (p *Points) MarshalJSON() ([]byte, error) {
-	points := float64(*p) / 100
-	return json.Marshal(&points)
+func (p Points) MarshalJSON() ([]byte, error) {
+	points := float64(p) / 100
+	return json.Marshal(points)
 }
 
 func (p *Points) UnmarshalJSON(data []byte) error {
@@ -105,6 +105,7 @@ func (p *Points) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	*p = Points(*points * 100)
+	ptmp := Points(*points * 100)
+	*p = ptmp
 	return nil
 }
