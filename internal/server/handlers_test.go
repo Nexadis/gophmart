@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -9,10 +10,16 @@ import (
 
 	"github.com/Nexadis/gophmart/internal/db"
 	"github.com/Nexadis/gophmart/internal/order"
+	"github.com/Nexadis/gophmart/internal/server/auth"
 	"github.com/Nexadis/gophmart/internal/user"
+	"github.com/Nexadis/gophmart/mocks"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/golang/mock/gomock"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
+
+var jwtTestSecret = `supersecret`
 
 var jsonHeaders = []http.Header{
 	{
@@ -22,105 +29,16 @@ var jsonHeaders = []http.Header{
 	},
 }
 
-var defaultDB = testDB{
-	Users: map[string]*user.User{
-		"admin": {
-			Login:    "admin",
-			Password: "secretpassword",
-		},
-	},
-}
-
-type testDB struct {
-	Users  map[string]*user.User
-	Orders map[string]*order.Order
-}
-
-func newTestDB() *testDB {
-	users := make(map[string]*user.User, 10)
-	orders := make(map[string]*order.Order, 10)
-	db := testDB{
-		users,
-		orders,
-	}
-	return &db
-}
-
-func (tdb testDB) Open(addr string) error {
-	return nil
-}
-
-func (tdb testDB) Close() error {
-	return nil
-}
-
-func (tdb *testDB) AddUser(ctx context.Context, user *user.User) error {
-	if _, ok := tdb.Users[user.Login]; ok {
-		return db.ErrUserIsExist
-	}
-	tdb.Users[user.Login] = user
-	return nil
-}
-
-func (tdb *testDB) GetUser(ctx context.Context, login string) (*user.User, error) {
-	var u *user.User
-	var ok bool
-	var err error
-	if u, ok = tdb.Users[login]; !ok {
-		return nil, db.ErrUserNotFound
-	}
-	u.Password, err = u.HashPassword()
-	if err != nil {
-		return nil, err
-	}
-	return u, nil
-}
-
-func (tdb *testDB) AddOrder(ctx context.Context, o *order.Order) error {
-	return nil
-}
-
-func (tdb *testDB) UpdateOrder(ctx context.Context, o *order.Order) error {
-	return nil
-}
-
-func (tdb *testDB) GetWithStatus(ctx context.Context, s order.Status) ([]order.OrderNumber, error) {
-	return nil, nil
-}
-
-func (tdb *testDB) AddOrders(ctx context.Context, orders []*order.Order) error {
-	return nil
-}
-
-func (tdb *testDB) GetOrder(ctx context.Context, number order.OrderNumber) (*order.Order, error) {
-	return nil, nil
-}
-
-func (tdb *testDB) GetOrders(ctx context.Context, owner string) ([]*order.Order, error) {
-	return nil, nil
-}
-
-func (tdb *testDB) AddWithdrawal(ctx context.Context, wd *order.Withdraw) error {
-	return nil
-}
-
-func (tdb *testDB) GetWithdrawals(ctx context.Context, owner string) ([]*order.Withdraw, error) {
-	return nil, nil
-}
-
-func (tdb *testDB) GetWithdrawn(ctx context.Context, owner string) (int64, error) {
-	return 0, nil
-}
-
-func (tdb *testDB) GetAccruals(ctx context.Context, owner string) (int64, error) {
-	return 0, nil
+var defaultUser = &user.User{
+	Login:    "admin",
+	Password: "secretpassword",
 }
 
 type want struct {
 	status   int
 	response string
+	body     string
 	err      error
-	db       testDB
 }
 
 type request struct {
@@ -155,7 +73,6 @@ var testsUserRegister = []testCase{
 			status:   http.StatusOK,
 			response: "",
 			err:      nil,
-			db:       defaultDB,
 		},
 	}, {
 		name: "Duplicate user",
@@ -166,16 +83,17 @@ var testsUserRegister = []testCase{
 			status:   http.StatusConflict,
 			response: db.ErrUserIsExist.Error(),
 			err:      db.ErrUserIsExist,
-			db:       defaultDB,
 		},
 	},
 }
 
 func newTestServer() *Server {
 	s := &Server{
-		e: echo.New(),
+		e:      echo.New(),
+		config: &Config{},
 	}
-	s.MountHandlers()
+	JwtSecret = []byte(jwtTestSecret)
+	prepareServer(s)
 	return s
 }
 
@@ -190,9 +108,15 @@ func setHeaders(r *http.Request, headers []http.Header) {
 }
 
 func TestUserRegister(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockdb := mocks.NewMockDatabase(ctrl)
 	s := newTestServer()
-	db := newTestDB()
-	s.db = db
+	gomock.InOrder(
+		mockdb.EXPECT().AddUser(context.Background(), defaultUser).Return(nil),
+		mockdb.EXPECT().AddUser(context.Background(), defaultUser).Return(db.ErrUserIsExist),
+	)
+	s.db = mockdb
 	for _, test := range testsUserRegister {
 		t.Run(test.name, func(t *testing.T) {
 			req := httptest.NewRequest(test.r.method, test.r.URI, strings.NewReader(test.r.body))
@@ -201,7 +125,6 @@ func TestUserRegister(t *testing.T) {
 			c := s.e.NewContext(req, rec)
 			if assert.NoError(t, s.UserRegister(c)) {
 				assert.Equal(t, test.want.status, rec.Code)
-				assert.Equal(t, test.want.db.Users, db.Users)
 			}
 		})
 	}
@@ -225,7 +148,6 @@ var testsUserLogin = []testCase{
 		want: want{
 			status: http.StatusOK,
 			err:    nil,
-			db:     defaultDB,
 		},
 	}, {
 		name: "Login invalid password",
@@ -235,7 +157,6 @@ var testsUserLogin = []testCase{
 		want: want{
 			status: http.StatusUnauthorized,
 			err:    nil,
-			db:     defaultDB,
 		},
 	}, {
 		name: "Login invalid user",
@@ -245,16 +166,24 @@ var testsUserLogin = []testCase{
 		want: want{
 			status: http.StatusUnauthorized,
 			err:    db.ErrUserNotFound,
-			db:     defaultDB,
 		},
 	},
 }
 
 func TestUserLogin(t *testing.T) {
 	s := newTestServer()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockdb := mocks.NewMockDatabase(ctrl)
+	defaultUser.HashPassword()
+	gomock.InOrder(
+		mockdb.EXPECT().GetUser(context.Background(), defaultUser.Login).Return(defaultUser, nil),
+		mockdb.EXPECT().GetUser(context.Background(), defaultUser.Login).Return(defaultUser, nil),
+		mockdb.EXPECT().GetUser(context.Background(), `user`).Return(nil, db.ErrUserNotFound),
+	)
+	s.db = mockdb
 	for _, test := range testsUserLogin {
 		t.Run(test.name, func(t *testing.T) {
-			s.db = &test.want.db
 			req := httptest.NewRequest(test.r.method, test.r.URI, strings.NewReader(test.r.body))
 			setHeaders(req, test.r.headers)
 			rec := httptest.NewRecorder()
@@ -266,8 +195,129 @@ func TestUserLogin(t *testing.T) {
 			}
 			if assert.NoError(t, err) {
 				assert.Equal(t, test.want.status, rec.Code)
-				assert.Equal(t, test.want.db.Users, test.want.db.Users)
 			}
 		})
 	}
+}
+
+func setLogin(c echo.Context, login string) error {
+	tokenString, err := auth.NewToken(login, JwtSecret)
+	token, _ := auth.GetToken(tokenString, JwtSecret)
+	token.Claims = jwt.MapClaims{
+		"login": login,
+	}
+	c.Set("user", token)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+var testOrdersSave = []testCase{
+	{
+		name: "Normal order number",
+		r: request{
+			method: http.MethodPost,
+			URI:    APIRestricted + APIUserOrders,
+			body:   "445084503850",
+		},
+		want: want{
+			status: http.StatusAccepted,
+			body:   "",
+			err:    nil,
+		},
+	},
+	{
+		name: "Normal order added by this user",
+		r: request{
+			method: http.MethodPost,
+			URI:    APIRestricted + APIUserOrders,
+			body:   "445084503850",
+		},
+		want: want{
+			status: http.StatusOK,
+			body:   db.ErrOrderAdded.Error(),
+			err:    nil,
+		},
+	},
+	{
+		name: "Order added by other user",
+		r: request{
+			method: http.MethodPost,
+			URI:    APIRestricted + APIUserOrders,
+			body:   "445084503850",
+		},
+		want: want{
+			status: http.StatusConflict,
+			body:   db.ErrOtherUserOrder.Error(),
+			err:    nil,
+		},
+	},
+	{
+		name: "Invalid number",
+		r: request{
+			method: http.MethodPost,
+			URI:    APIRestricted + APIUserOrders,
+			body:   "445084503851",
+		},
+		want: want{
+			status: http.StatusUnprocessableEntity,
+			body:   order.ErrInvalidNum.Error(),
+			err:    nil,
+		},
+	},
+}
+
+func TestOrdersSave(t *testing.T) {
+	s := newTestServer()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockdb := mocks.NewMockDatabase(ctrl)
+	s.db = mockdb
+	defaultUser.HashPassword()
+	gomock.InOrder(
+		mockdb.EXPECT().AddOrder(
+			context.Background(),
+			gomock.Any(),
+		).Return(nil),
+		mockdb.EXPECT().AddOrder(
+			context.Background(),
+			gomock.Any(),
+		).Return(db.ErrOrderAdded),
+		mockdb.EXPECT().AddOrder(
+			context.Background(),
+			gomock.Any(),
+		).Return(db.ErrOtherUserOrder),
+	)
+	for _, test := range testOrdersSave {
+		t.Run(test.name, func(t *testing.T) {
+			req := httptest.NewRequest(test.r.method, test.r.URI, strings.NewReader(test.r.body))
+			setHeaders(req, test.r.headers)
+			rec := httptest.NewRecorder()
+			c := s.e.NewContext(req, rec)
+			setLogin(c, defaultUser.Login)
+			err := s.UserOrdersSave(c)
+			if test.want.err != nil {
+				assert.Equal(t, test.want.err, err)
+				return
+			}
+			if assert.NoError(t, err) {
+				assert.Equal(t, test.want.status, rec.Code)
+			}
+			body, _ := io.ReadAll(rec.Body)
+			assert.Equal(t, []byte(test.want.body), body)
+		})
+	}
+}
+
+func TestOrdersGet(t *testing.T) {
+}
+
+func TestUserBalance(t *testing.T) {
+}
+
+func TestUserBalanceWithdraw(t *testing.T) {
+}
+
+func TestUserWithDrawals(t *testing.T) {
 }
