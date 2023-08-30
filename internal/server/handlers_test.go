@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -34,6 +35,11 @@ var defaultUser = &user.User{
 	Password: "secretpassword",
 }
 
+var otherUser = &user.User{
+	Login:    "otheruser",
+	Password: "otherpassword",
+}
+
 type want struct {
 	status   int
 	response string
@@ -46,6 +52,7 @@ type request struct {
 	URI     string
 	body    string
 	headers []http.Header
+	user    *user.User
 }
 
 type testCase struct {
@@ -220,6 +227,7 @@ var testOrdersSave = []testCase{
 			method: http.MethodPost,
 			URI:    APIRestricted + APIUserOrders,
 			body:   "445084503850",
+			user:   defaultUser,
 		},
 		want: want{
 			status: http.StatusAccepted,
@@ -233,6 +241,7 @@ var testOrdersSave = []testCase{
 			method: http.MethodPost,
 			URI:    APIRestricted + APIUserOrders,
 			body:   "445084503850",
+			user:   defaultUser,
 		},
 		want: want{
 			status: http.StatusOK,
@@ -246,6 +255,7 @@ var testOrdersSave = []testCase{
 			method: http.MethodPost,
 			URI:    APIRestricted + APIUserOrders,
 			body:   "445084503850",
+			user:   otherUser,
 		},
 		want: want{
 			status: http.StatusConflict,
@@ -259,6 +269,7 @@ var testOrdersSave = []testCase{
 			method: http.MethodPost,
 			URI:    APIRestricted + APIUserOrders,
 			body:   "445084503851",
+			user:   otherUser,
 		},
 		want: want{
 			status: http.StatusUnprocessableEntity,
@@ -268,7 +279,80 @@ var testOrdersSave = []testCase{
 	},
 }
 
+type orderMatcher struct {
+	Number string
+	Owner  string
+}
+
+func mockOrder(number, owner string) gomock.Matcher {
+	return &orderMatcher{
+		Number: number,
+		Owner:  owner,
+	}
+}
+
+func (om *orderMatcher) Matches(x interface{}) bool {
+	o, ok := x.(*order.Order)
+	if !ok {
+		return false
+	}
+	if string(o.Number) != om.Number {
+		return false
+	}
+	if o.Owner != om.Owner {
+		return false
+	}
+
+	return true
+}
+
+func (om *orderMatcher) String() string {
+	return fmt.Sprintf("Match order, owner: %s, number: %s", om.Owner, om.Number)
+}
+
 func TestOrdersSave(t *testing.T) {
+	s := newTestServer()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockdb := mocks.NewMockDatabase(ctrl)
+	s.db = mockdb
+	defaultUser.HashPassword()
+	gomock.InOrder(
+		mockdb.EXPECT().AddOrder(
+			context.Background(),
+			mockOrder("445084503850", defaultUser.Login),
+		).Return(nil),
+		mockdb.EXPECT().AddOrder(
+			context.Background(),
+			mockOrder("445084503850", defaultUser.Login),
+		).Return(db.ErrOrderAdded),
+		mockdb.EXPECT().AddOrder(
+			context.Background(),
+			mockOrder("445084503850", otherUser.Login),
+		).Return(db.ErrOtherUserOrder),
+	)
+	for _, test := range testOrdersSave {
+		t.Run(test.name, func(t *testing.T) {
+			req := httptest.NewRequest(test.r.method, test.r.URI, strings.NewReader(test.r.body))
+			setHeaders(req, test.r.headers)
+			rec := httptest.NewRecorder()
+			c := s.e.NewContext(req, rec)
+			setLogin(c, test.r.user.Login)
+			err := s.UserOrdersSave(c)
+			if test.want.err != nil {
+				assert.Equal(t, test.want.err, err)
+				return
+			}
+			if assert.NoError(t, err) {
+				assert.Equal(t, test.want.status, rec.Code)
+			}
+			body, _ := io.ReadAll(rec.Body)
+			assert.Equal(t, []byte(test.want.body), body)
+		})
+	}
+}
+
+func TestOrdersGet(t *testing.T) {
 	s := newTestServer()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -308,9 +392,6 @@ func TestOrdersSave(t *testing.T) {
 			assert.Equal(t, []byte(test.want.body), body)
 		})
 	}
-}
-
-func TestOrdersGet(t *testing.T) {
 }
 
 func TestUserBalance(t *testing.T) {
