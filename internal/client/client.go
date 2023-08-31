@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -39,59 +38,25 @@ func New(addr string, db db.OrdersStore, wait time.Duration) *Client {
 }
 
 func (c *Client) GetAccruals(done chan struct{}, errors chan error) {
-	orders := make(chan order.OrderNumber)
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		t := time.NewTicker(c.wait)
-		for {
-			select {
-			case <-done:
-				close(orders)
-				wg.Done()
-				return
-			case <-t.C:
-				processingOrders, err := c.db.GetWithStatus(context.Background(), order.StatusProcessing)
-				if err != nil {
-					logger.Logger.Error(err)
-					continue
-				}
-				newOrders, err := c.db.GetWithStatus(context.Background(), order.StatusNew)
-				if err != nil {
-					logger.Logger.Error(err)
-					continue
-				}
-				ordersToHandle := append(processingOrders, newOrders...)
-				for _, number := range ordersToHandle {
-					orders <- number
-				}
-			}
+	orders := unprocessedOrders(c, done)
+	for n := range orders {
+		o := &order.Order{
+			Number: n,
 		}
-	}()
-	for {
-		select {
-		case n := <-orders:
-			o := &order.Order{
-				Number: n,
-			}
-			a, err := c.getOrderStatus(n)
-			switch err {
-			case nil:
-				o.Status = accrualToOrderStatus(a.Status)
-				o.Accrual = a.Accrual
-			case ErrNotRegistered:
-				o.Status = order.StatusInvalid
-			default:
-				logger.Logger.Error(err)
-				continue
-			}
-			err = c.db.UpdateOrder(context.Background(), o)
-			if err != nil {
-				logger.Logger.Error(err)
-			}
-		case <-done:
-			wg.Wait()
-			return
+		a, err := c.getOrderStatus(n)
+		switch err {
+		case nil:
+			o.Status = accrualToOrderStatus(a.Status)
+			o.Accrual = a.Accrual
+		case ErrNotRegistered:
+			o.Status = order.StatusInvalid
+		default:
+			logger.Logger.Error(err)
+			continue
+		}
+		err = c.db.UpdateOrder(context.Background(), o)
+		if err != nil {
+			logger.Logger.Error(err)
 		}
 	}
 }
@@ -131,4 +96,34 @@ func accrualToOrderStatus(status string) order.Status {
 		return order.StatusProcessed
 	}
 	return order.StatusInvalid
+}
+
+func unprocessedOrders(c *Client, done <-chan struct{}) <-chan order.OrderNumber {
+	orders := make(chan order.OrderNumber)
+	go func() {
+		t := time.NewTicker(c.wait)
+		for {
+			select {
+			case <-done:
+				close(orders)
+				return
+			case <-t.C:
+				processingOrders, err := c.db.GetWithStatus(context.Background(), order.StatusProcessing)
+				if err != nil {
+					logger.Logger.Error(err)
+					continue
+				}
+				newOrders, err := c.db.GetWithStatus(context.Background(), order.StatusNew)
+				if err != nil {
+					logger.Logger.Error(err)
+					continue
+				}
+				ordersToHandle := append(processingOrders, newOrders...)
+				for _, number := range ordersToHandle {
+					orders <- number
+				}
+			}
+		}
+	}()
+	return orders
 }

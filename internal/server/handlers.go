@@ -182,7 +182,7 @@ func (s *Server) UserWithdrawals(c echo.Context) error {
 }
 
 func getBalance(ctx context.Context, db db.Database, owner string) (*user.Balance, error) {
-	accruals, err := db.GetAccruals(ctx, owner)
+	accrualled, err := db.GetAccruals(ctx, owner)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +192,7 @@ func getBalance(ctx context.Context, db db.Database, owner string) (*user.Balanc
 	}
 
 	return &user.Balance{
-		Current:   accruals - withdrawn,
+		Current:   accrualled - withdrawn,
 		Withdrawn: withdrawn,
 	}, nil
 }
