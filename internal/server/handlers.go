@@ -38,16 +38,7 @@ func (s *Server) UserRegister(c echo.Context) error {
 		}
 	}
 	logger.Logger.Debugf("Register user:%v", *u)
-
-	token, err := auth.NewToken(u.Login, JwtSecret)
-	if err != nil {
-		logger.Logger.Error(err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
-	resp := echo.NewResponse(c.Response().Writer, s.e)
-	resp.Header().Add("Authorization", fmt.Sprintf("Bearer %s", token))
-	c.SetResponse(resp)
-	return c.JSON(http.StatusOK, map[string]string{"token": token})
+	return returnToken(c, u.Login)
 }
 
 func (s *Server) UserLogin(c echo.Context) error {
@@ -71,16 +62,7 @@ func (s *Server) UserLogin(c echo.Context) error {
 	if !u.IsValidHash(savedUser.HashPass) {
 		return c.NoContent(http.StatusUnauthorized)
 	}
-	token, err := auth.NewToken(u.Login, JwtSecret)
-	if err != nil {
-		logger.Logger.Error(err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
-	logger.Logger.Infof("User '%s' authorized. Token:'%s'", savedUser.Login, token)
-	resp := echo.NewResponse(c.Response().Writer, s.e)
-	resp.Header().Add(echo.HeaderAuthorization, fmt.Sprintf("Bearer %s", token))
-	c.SetResponse(resp)
-	return c.JSON(http.StatusOK, map[string]string{"token": token})
+	return returnToken(c, u.Login)
 }
 
 func (s *Server) UserOrdersSave(c echo.Context) error {
@@ -213,4 +195,17 @@ func getBalance(ctx context.Context, db db.Database, owner string) (*user.Balanc
 		Current:   accruals - withdrawn,
 		Withdrawn: withdrawn,
 	}, nil
+}
+
+func returnToken(c echo.Context, login string) error {
+	token, err := auth.NewToken(login, JwtSecret)
+	if err != nil {
+		logger.Logger.Error(err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	resp := echo.NewResponse(c.Response().Writer, c.Echo())
+	resp.Header().Add(echo.HeaderAuthorization, fmt.Sprintf("Bearer %s", token))
+	logger.Logger.Infof("User '%s' authorized. Token:'%s'", login, token)
+	c.SetResponse(resp)
+	return c.JSON(http.StatusOK, map[string]string{"token": token})
 }
