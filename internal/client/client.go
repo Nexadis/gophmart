@@ -51,18 +51,18 @@ func (c *Client) GetAccruals(done chan struct{}, errors chan error) {
 				wg.Done()
 				return
 			case <-t.C:
-				PrcessingOrders, err := c.db.GetWithStatus(context.Background(), order.StatusProcessing)
+				processingOrders, err := c.db.GetWithStatus(context.Background(), order.StatusProcessing)
 				if err != nil {
 					logger.Logger.Error(err)
 					continue
 				}
-				NewOrders, err := c.db.GetWithStatus(context.Background(), order.StatusNew)
+				newOrders, err := c.db.GetWithStatus(context.Background(), order.StatusNew)
 				if err != nil {
 					logger.Logger.Error(err)
 					continue
 				}
-				Orders := append(PrcessingOrders, NewOrders...)
-				for _, number := range Orders {
+				ordersToHandle := append(processingOrders, newOrders...)
+				for _, number := range ordersToHandle {
 					orders <- number
 				}
 			}
