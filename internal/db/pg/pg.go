@@ -6,13 +6,14 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
+	_ "github.com/jackc/pgx/v5/stdlib"
+
 	"github.com/Nexadis/gophmart/internal/db"
 	"github.com/Nexadis/gophmart/internal/logger"
 	"github.com/Nexadis/gophmart/internal/order"
 	"github.com/Nexadis/gophmart/internal/user"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5/pgconn"
-	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 const SchemaUsers = `CREATE TABLE Users(

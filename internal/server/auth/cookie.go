@@ -3,9 +3,10 @@ package auth
 import (
 	"errors"
 
-	"github.com/Nexadis/gophmart/internal/logger"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
+
+	"github.com/Nexadis/gophmart/internal/logger"
 )
 
 var (

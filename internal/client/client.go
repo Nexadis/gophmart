@@ -8,10 +8,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-resty/resty/v2"
+
 	"github.com/Nexadis/gophmart/internal/db"
 	"github.com/Nexadis/gophmart/internal/logger"
 	"github.com/Nexadis/gophmart/internal/order"
-	"github.com/go-resty/resty/v2"
 )
 
 const APIGetAccrual = `/api/orders/{number}`

@@ -3,8 +3,9 @@ package auth
 import (
 	"testing"
 
-	"github.com/Nexadis/gophmart/internal/user"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Nexadis/gophmart/internal/user"
 )
 
 type want struct {

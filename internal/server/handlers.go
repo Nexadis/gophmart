@@ -7,13 +7,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/labstack/echo/v4"
+	"golang.org/x/net/context"
+
 	"github.com/Nexadis/gophmart/internal/db"
 	"github.com/Nexadis/gophmart/internal/logger"
 	"github.com/Nexadis/gophmart/internal/order"
 	"github.com/Nexadis/gophmart/internal/server/auth"
 	"github.com/Nexadis/gophmart/internal/user"
-	"github.com/labstack/echo/v4"
-	"golang.org/x/net/context"
 )
 
 const InvalidReq = "invalid request"

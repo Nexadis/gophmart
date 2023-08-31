@@ -3,8 +3,9 @@ package server
 import (
 	"flag"
 
-	"github.com/Nexadis/gophmart/internal/logger"
 	"github.com/caarlos0/env/v9"
+
+	"github.com/Nexadis/gophmart/internal/logger"
 )
 
 type Config struct {

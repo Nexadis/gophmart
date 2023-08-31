@@ -9,15 +9,16 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/golang/mock/gomock"
+	"github.com/labstack/echo/v4"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/Nexadis/gophmart/internal/db"
 	"github.com/Nexadis/gophmart/internal/order"
 	"github.com/Nexadis/gophmart/internal/server/auth"
 	"github.com/Nexadis/gophmart/internal/user"
 	"github.com/Nexadis/gophmart/mocks"
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/golang/mock/gomock"
-	"github.com/labstack/echo/v4"
-	"github.com/stretchr/testify/assert"
 )
 
 var jwtTestSecret = `supersecret`
