@@ -77,7 +77,7 @@ func (s *Server) UserLogin(c echo.Context) error {
 	}
 	logger.Logger.Infof("User '%s' authorized. Token:'%s'", savedUser.Login, token)
 	resp := echo.NewResponse(c.Response().Writer, s.e)
-	resp.Header().Add("Authorization", fmt.Sprintf("Bearer %s", token))
+	resp.Header().Add(echo.HeaderAuthorization, fmt.Sprintf("Bearer %s", token))
 	c.SetResponse(resp)
 	return c.JSON(http.StatusOK, map[string]string{"token": token})
 }
